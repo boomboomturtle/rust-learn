@@ -4,6 +4,23 @@ use reqwest::Error;
 use std::time::{Duration, Instant};
 use serde_json::Value;
 
+use serde::{Deserialize, Serialize};
+use std::fmt;
+
+#[derive(Debug, Serialize, Deserialize)]
+struct MyObject {
+    level: i32,                    // Assuming level is of type i32
+    lower_threshold: String,       // Lower threshold as a String
+    title: String,                 // Title as a String
+    upper_threshold: String,       // Upper threshold as a String
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct MyData {
+    data: Option <Vec<MyObject>>,  // Optionally contains a vector of MyObject
+}
+
+
 const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
 
 fn main() {
@@ -32,8 +49,7 @@ fn get_market_inventory() -> Result <(), Error> {
         println!("{}", key);
     }
 
-    // println!("parsed_value: {:?}", parsed_value.get("tradingTiers"));
-
     Ok(())
 }
+
 
