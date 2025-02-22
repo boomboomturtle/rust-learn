@@ -63,9 +63,101 @@ struct FeeConfig {
     withdrawalFees: String,
 }
 
+//   "markets": [
+    // {
+    //   "contract": {
+    //   },
+    //   "info": {
+    //     "category": "Meme",
+    //     "markPrice": "16.349525685",
+    //     "price24hAgo": "17.034793082",
+    //     "priceLatest": "16.333810056",
+    //     "tags": [
+    //       "meme"
+    //     ]
+    //   }
+    // },
 
+#[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 struct Markets {
+    marketsData: Vec<MarketsData>,
+}
+
+#[allow(non_snake_case)]
+#[derive(Debug, Serialize, Deserialize)]
+struct MarketsData {
+    contract: ContractsData,
+    info: InfoData,
+}
+
+    //   "contract": {
+    //     "displayName": "TRUMP/USDT Perps",
+    //     "id": 8,
+    //     "maintenanceFactorForPositions": "0.030000",
+    //     "marketCloseTimestamp": null,
+    //     "marketOpenTimestamp": null,
+    //     "minNotional": "1",
+    //     "minOrderSize": "0.00001",
+    //     "orderbookGranularities": [
+    //       "0.00001",
+    //       "0.0001",
+    //       "0.001",
+    //       "0.01"
+    //     ],
+    //     "riskFactorForOrders": "0.500000",
+    //     "riskFactorForPositions": "0.370000",
+    //     "settlementDecimals": 6,
+    //     "settlementSymbol": "USDT",
+    //     "status": "LIVE",
+    //     "stepSize": "0.00001",
+    //     "symbol": "TRUMP/USDT-P",
+    //     "tickSize": "0.000000001",
+    //     "underlyingDecimals": 5,
+    //     "underlyingSymbol": "TRUMP"
+    //   },
+
+#[allow(non_snake_case)]
+#[derive(Debug, Serialize, Deserialize)]
+struct ContractsData {
+    displayName: String,
+    id: i32,
+    maintenanceFactorForPositions: String,
+    marketCloseTimestamp: String, // TODO: This can be null. How will you handle it?
+    marketOpenTimestamp: String, // TODO: This can be null. How will you handle it?
+    minNotional: String,
+    minOrderSize: String,
+    orderbookGranularities: Vec<String>,
+    riskFactorForOrders: String,
+    riskFactorForPositions: String,
+    settlemetDecimals: i32,
+    settlementSymbol: String,
+    status: String,
+    stepSize: String,
+    symbol: String,
+    tickSize: String,
+    underlyingDecimals: i32,
+    uderlyingSymbol: String,
+}
+
+    //   "info": {
+    //     "category": "Meme",
+    //     "markPrice": "16.349525685",
+    //     "price24hAgo": "17.034793082",
+    //     "priceLatest": "16.333810056",
+    //     "tags": [
+    //       "meme"
+    //     ]
+    //   }
+
+#[allow(non_snake_case)]
+#[derive(Debug, Serialize, Deserialize)]
+struct InfoData {
+    category: String,
+    markPrice: String,
+    price24hAgo: String,
+    priceLatest: String,
+    tags: Vec<String>,
 }
 
 // "tradingTiers": [
