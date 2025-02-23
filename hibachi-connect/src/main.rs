@@ -2,18 +2,17 @@ use std::{array, env};
 use reqwest::blocking::get;
 use reqwest::Error;
 use std::time::{Duration, Instant};
-use serde_json::Value;
+// use serde_json::Value;
 use serde::{Deserialize, Serialize};
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 struct MarketInventory {
-    crossChainAssets: CrossChainAssets,
+    crossChainAssets: Vec<CrossChainAssets>,
     feeConfig: FeeConfig,
-    markets: Markets,
-    tradingTiers: TradingTiers,
+    markets: Vec<MarketsData>,
+    tradingTiers: Vec<TradingTiers>,
 }
-
 
 // "crossChainAssets": [
 //     {
@@ -80,12 +79,6 @@ struct FeeConfig {
 
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
-struct Markets {
-    marketsData: Vec<MarketsData>,
-}
-
-#[allow(non_snake_case)]
-#[derive(Debug, Serialize, Deserialize)]
 struct MarketsData {
     contract: ContractsData,
     info: InfoData,
@@ -123,21 +116,21 @@ struct ContractsData {
     displayName: String,
     id: i32,
     maintenanceFactorForPositions: String,
-    marketCloseTimestamp: String, // TODO: This can be null. How will you handle it?
-    marketOpenTimestamp: String, // TODO: This can be null. How will you handle it?
+    marketCloseTimestamp: Option<String>, // TODO: This can be null. How will you handle it?
+    marketOpenTimestamp: Option<String>, // TODO: This can be null. How will you handle it?
     minNotional: String,
     minOrderSize: String,
     orderbookGranularities: Vec<String>,
     riskFactorForOrders: String,
     riskFactorForPositions: String,
-    settlemetDecimals: i32,
+    settlementDecimals: i32,
     settlementSymbol: String,
     status: String,
     stepSize: String,
     symbol: String,
     tickSize: String,
-    underlyingDecimals: i32,
-    uderlyingSymbol: String,
+    underlyingDecimals: u32,
+    underlyingSymbol: String,
 }
 
     //   "info": {
@@ -153,7 +146,7 @@ struct ContractsData {
 #[allow(non_snake_case)]
 #[derive(Debug, Serialize, Deserialize)]
 struct InfoData {
-    category: String,
+    category: Option<String>,
     markPrice: String,
     price24hAgo: String,
     priceLatest: String,
@@ -183,10 +176,7 @@ fn main() {
     let _hibachi_api_key: String = env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set");
     let _hibachi_private_key: String = env::var("HIBACHI_PRIVATE_KEY").expect("HIBACHI_PRIVATE_KEY not set");
 
-    let start_time: Instant = Instant::now();
-    let response = get_market_inventory();
-    let elapsed: Duration = start_time.elapsed();
-    println!("Response = {:?}, time taken = {:?}", response, elapsed);
+    let _response = get_market_inventory();
 }
 
 fn get_market_inventory() -> Result <(), Error> {
@@ -195,16 +185,36 @@ fn get_market_inventory() -> Result <(), Error> {
     url.push_str(url_appendage);
 
     println!("{}", url);
+
+    let start_time: Instant = Instant::now();
     // Send a GET request
     let response: String = get(url)?
-        .text()?;
-    
-    let parsed_value: Value = serde_json::from_str(&response).expect("Failed to parse JSON");
+        .text()?;    
 
-    println!("{}", parsed_value);
+    let elapsed: Duration = start_time.elapsed();    
+    println!("Time taken for GET request: {:?}", elapsed);
 
-    // for key in parsed_value.as_object().unwrap().keys(){
-    //     println!("{}", key);
+    let start_time: Instant = Instant::now();
+
+    let parsed_struct: MarketInventory = serde_json::from_str(&response).expect("Failed to parse JSON");
+
+    let elapsed: Duration = start_time.elapsed();    
+    println!("Time taken to deserialize and parse: {:?}", elapsed);
+
+    println!("{:?}", parsed_struct);
+
+    // for key in parsed_struct.crossChainAssets{
+    //     println!("Cross Chain Assets: \n {:?}", key);
+    // }
+
+    // println!("feeConfig: \n {:?}", parsed_struct.feeConfig);
+
+    // for key in parsed_struct.markets{
+    //     println!("Markets Data: \n {:?}", key);
+    // }
+
+    // for key in parsed_struct.tradingTiers{
+    //     println!("Trading Tiers: \n {:?}", key);
     // }
 
     Ok(())
