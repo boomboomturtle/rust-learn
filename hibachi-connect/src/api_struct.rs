@@ -1,4 +1,4 @@
-pub mod api_response {
+pub mod market_inventory_api_response {
     use serde::{Deserialize, Serialize};
 
     #[allow(non_snake_case)]
@@ -165,14 +165,74 @@ pub mod api_response {
         title: String,
         upperThreshold: String
     }
+}
+
+pub mod orderbook_data_response {
+    use serde::{Deserialize, Serialize};
+    
+    // {
+    //     "ask": {
+    //         "endPrice": "2803.32",
+    //         "levels": [
+    //             {
+    //                 "price": "2803.30",
+    //                 "quantity": "4.549070814"
+    //             }
+    //         ],
+    //         "startPrice": "2803.30"
+    //     },
+    //     "bid": {
+    //         "endPrice": "2801.61",
+    //         "levels": [
+    //             {
+    //                 "price": "2801.71",
+    //                 "quantity": "1.630000000"
+    //             }
+    //         ],
+    //         "startPrice": "2801.71"
+    //     }
+    // }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct PriceInfo {
+        pub price: String,
+        pub quantity: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct AllPriceInfo {
+        pub endPrice: String,
+        pub levels: Vec<PriceInfo>,
+        pub startPrice: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetOrderbookData {
+        pub bid: AllPriceInfo,
+        pub ask: AllPriceInfo,        
+    }
+
 
 }
 
-// pub mod api_data {
-//     use serde::{Deserialize, Serialize};
+
+pub mod get_orderbook_data_api_body {
+    use serde::{Deserialize, Serialize};
     
-//     #[allow(non_snake_case)]
-//     #[derive(Debug, Serialize, Deserialize)]
-//     struct GetOrderbookData {
-//     }
-// }
+    // symbol (string)
+    // depth (optional 32-bit unsigned integer representing the number of levels to query)
+    // granularity (optional string representing the precision of the levels returned)        
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetOrderbookDataInput {
+        pub symbol: String,
+        pub depth: u32,
+        pub granularity: String,
+    }
+}
+
+
