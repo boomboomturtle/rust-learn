@@ -10,7 +10,7 @@ pub mod market_inventory_api_response {
         tradingTiers: Vec<TradingTiers>,
     }
 
-    // "crossChainAssets": [
+    // "crossChainAssets": 
     //     {
     //       "chain": "Base",
     //       "exchangeRateFromUSDT": "0.990000",
@@ -167,7 +167,19 @@ pub mod market_inventory_api_response {
     }
 }
 
-pub mod orderbook_data_response {
+pub mod open_interest_api_response {
+    use serde::{Deserialize, Serialize};
+    // {"totalQuantity":"38.552813167"}
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetOpenInterest {
+        pub totalQuantity: String,
+    }
+}
+
+
+pub mod orderbook_data_api_response {
     use serde::{Deserialize, Serialize};
     
     // {
@@ -236,3 +248,38 @@ pub mod get_orderbook_data_api_body {
 }
 
 
+pub mod price_info_api_response {
+    use serde::{Deserialize, Serialize};
+    
+    // {
+    //     "askPrice": "2673.245523",
+    //     "bidPrice": "2672.320000",
+    //     "fundingRateEstimation": {
+    //       "estimatedFundingRate": "-0.000132",
+    //       "nextFundingTimestamp": 1740412800
+    //     },
+    //     "markPrice": "2672.560800",
+    //     "spotPrice": "2672.873040",
+    //     "symbol": "ETH/USDT-P",
+    //     "tradePrice": "2670.160000"
+    //   }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct FundingRateEstimateInfo {
+        pub estimatedFundingRate: String,
+        pub nextFundingTimestamp: u32,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetMarketPriceInfo {
+        pub askPrice: String,
+        pub bidPrice: String,
+        pub fundingRateEstimation: FundingRateEstimateInfo,
+        pub markPrice: String,
+        pub spotPrice: String,
+        pub symbol: String,
+        pub tradePrice: String,
+    }
+}
