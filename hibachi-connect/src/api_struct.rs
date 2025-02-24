@@ -392,3 +392,31 @@ pub mod account_balance_api_response {
         pub balance: String,
     }
 }
+
+
+pub mod account_history_api_response {
+    use serde::{Deserialize, Serialize};    
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Transaction {
+        pub assetId: u32,
+        pub blockNumber: u32,
+        pub chain: Option<u32>,
+        pub etaTsSec: u32,
+        pub id: u32,
+        pub quantity: String,
+        pub status: String,
+        pub timestamp: u32,
+        pub token: Option<String>,
+        pub transactionHash: String,
+        pub transactionType: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetAccountHistory {
+        pub transactions: Vec<Transaction>,
+    }
+}
+
