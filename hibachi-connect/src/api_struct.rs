@@ -283,3 +283,112 @@ pub mod price_info_api_response {
         pub tradePrice: String,
     }
 }
+
+
+pub mod market_stats_api_response {
+    use serde::{Deserialize, Serialize};    
+// Response = "{\"high24h\":\"2842.350000\",\"low24h\":\"2664.210000\",\"symbol\":\"ETH/USDT-P\",\"volume24h\":\"847053.598157\"}"
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetMarketStatsInfo {
+        pub high24h: String,
+        pub low24h: String,
+        pub symbol: String,
+        pub volume24h: String,
+    }
+}
+
+
+pub mod market_trades_api_response {
+    use serde::{Deserialize, Serialize};    
+
+    // {
+    //     "trades": [
+    //       {
+    //         "price": "3512.431902",
+    //         "quantity": "1.414780098",
+    //         "takerSide": "Buy",
+    //         "timestamp": 1712692147
+    //       },
+    //       {
+    //         "price": "3512.783321",
+    //         "quantity": "1.138242707",
+    //         "takerSide": "Sell",
+    //         "timestamp": 1712692147
+    //       }
+    //     ]
+    //   }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct TradesInfo {
+        pub price: String,
+        pub quantity: String,
+        pub takerSide: String,
+        pub timestamp: u32,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetMarketTradesInfo {
+        pub trades: Vec<TradesInfo>,
+    }
+}
+
+
+pub mod market_klines_api_response {
+    use serde::{Deserialize, Serialize};    
+
+// {
+//     "klines": [
+//       {
+//         "close": "3704.751036",
+//         "high": "3716.530378",
+//         "interval": "1h",
+//         "low": "3699.627883",
+//         "open": "3716.406894",
+//         "timestamp": 1712628000,
+//         "volumeNotional": "1637355.846362"
+//       },
+//       {
+//         "close": "3693.029781",
+//         "high": "3717.863717",
+//         "interval": "1h",
+//         "low": "3682.131347",
+//         "open": "3706.001256",
+//         "timestamp": 1712631600,
+//         "volumeNotional": "3590375.750775"
+//       }
+//     ]
+//   }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct KlinesInfo {
+        pub close: String,
+        pub high: String,
+        pub interval: String,
+        pub low: String,
+        pub open: String,
+        pub timestamp: u32,
+        pub volumeNotional: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetMarketKlinesInfo {
+        pub klines: Vec<KlinesInfo>,
+    }
+}
+
+
+pub mod account_balance_api_response {
+    use serde::{Deserialize, Serialize};    
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetAccountBalance {
+        pub balance: String,
+    }
+}

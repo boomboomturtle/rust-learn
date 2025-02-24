@@ -1,31 +1,106 @@
 use std::env;
 // use std::fmt::format;
-use reqwest::blocking::get;
+use reqwest::blocking::{get, Client};
+use reqwest::header::AUTHORIZATION;
 use reqwest::Error;
 
 use std::time::{Duration, Instant};
 // use serde_json::Value;
 
 mod api_struct;
-use api_struct::{get_orderbook_data_api_body::*, market_inventory_api_response::*,open_interest_api_response::*, orderbook_data_api_response::*, price_info_api_response::GetMarketPriceInfo};
+use api_struct::{get_orderbook_data_api_body::*, market_inventory_api_response::*,open_interest_api_response::*, orderbook_data_api_response::*, price_info_api_response::GetMarketPriceInfo, market_stats_api_response::*};
+use api_struct::{market_trades_api_response::*, market_klines_api_response::*, account_balance_api_response::*};
 
 const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
+const ACCOUNT_API_ENDPOINT: &str = "https://api.hibachi.xyz/";
 const SYMBOL: &str = "ETH/USDT-P";
 
 fn main() {
     let _hibachi_api_key: String = env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set");
     let _hibachi_private_key: String = env::var("HIBACHI_PRIVATE_KEY").expect("HIBACHI_PRIVATE_KEY not set");
+    let _hibachi_account_id: String = env::var("HIBACHI_ACCOUNT_ID").expect("HIBACHI_ACCOUNT_ID not set");
 
     let _response = get_market_inventory();
     let _response = get_order_book(1, 0.01);
     let _response = get_open_interest();
     let _response = get_market_price_info();
+    let _response = get_market_stats();
+    let _response = get_market_trades();
+    let _response = get_market_klines("1h".to_owned(), None, None);
+    let _response = get_account_balance(_hibachi_account_id, _hibachi_api_key);
 }
 
-// https://data-api.hibachi.xyz/market/data/prices?symbol=ETH/USDT-P
-fn get_market_price_info() -> Result<(), Error> {
+// https://api.hibachi.xyz/capital/balance?accountId=<accountId>
+fn get_account_balance(account_id: String, hibachi_api_key: String) -> Result<(), Error> {
+    let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
+    let url_appendage: &str = "capital/balance";
+    url.push_str(url_appendage);
+
+    let user_string = format!("?accountId={}", account_id);
+    url.push_str(&user_string);
+
+    println!("{}", url);
+
+    let client: Client = Client::new();
+
+    let response = client
+        .get(url) // GET request with query parameter
+        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .send()?; // Send the request
+
+    // println!("Response Body: {}", response.text()?);
+
+    // Check that the response was successful
+    // if response.status().is_success() {
+    //     let response_body = response.text()?;
+    //     println!("Response: {}", response_body);
+    // } else {
+    //     println!("Error: {}", response.status());
+    // }
+
+    // println!("{}", response);
+    let _parsed_struct: GetAccountBalance = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
+
+    println!("{:?}", _parsed_struct);
+    
+    Ok(())
+}
+
+fn get_market_klines(interval: String, from_ms: Option<u32>, to_ms: Option<u32>)  -> Result <(), Error> {
     let mut url: String = DATA_API_ENDPOINT.to_owned();
-    let url_appendage: &str = "market/data/prices";
+    let url_appendage: &str = "market/data/klines";
+    url.push_str(url_appendage);
+
+    let user_string = format!("?symbol={}&interval={}", SYMBOL, interval);
+    url.push_str(&user_string);
+
+    match from_ms {
+        Some(value) => url.push_str(&(format!("?fromMs={}", value))),
+        None => ()
+    }
+    match to_ms {
+        Some(value) => url.push_str(&(format!("?toMs={}", value))),
+        None => ()
+    }
+
+    println!("{}", url);
+
+    // Send a GET request
+    let response: String = get(url)?
+        .text()?;
+
+    // println!("{}", response);
+    let _parsed_struct: GetMarketKlinesInfo = serde_json::from_str(&response).expect("Failed to parse JSON");
+
+    // println!("{:?}", _parsed_struct);
+
+    Ok(())
+}
+
+
+fn get_market_trades() -> Result<(), Error> {
+    let mut url: String = DATA_API_ENDPOINT.to_owned();
+    let url_appendage: &str = "market/data/trades";
     url.push_str(url_appendage);
 
     println!("{}", url);
@@ -36,8 +111,48 @@ fn get_market_price_info() -> Result<(), Error> {
     let response = get(url)?
         .text()?;
 
-    let parsed_struct: GetMarketPriceInfo = serde_json::from_str(&response).expect("failed to parse JSON");
-    println!("Response = {:?}", parsed_struct);
+    let _parsed_struct: GetMarketTradesInfo = serde_json::from_str(&response).expect("failed to parse JSON");
+    // println!("Response = {:?}", _parsed_struct);
+
+    Ok(())
+
+}
+
+fn get_market_stats() -> Result<(), Error> {
+    let mut url: String = DATA_API_ENDPOINT.to_owned();
+    let url_appendage: &str = "market/data/stats";
+    url.push_str(url_appendage);
+
+    println!("{}", url);
+
+    let user_string = format!("?symbol={}", SYMBOL);
+    url.push_str(&user_string);
+
+    let response = get(url)?
+        .text()?;
+
+    let _parsed_struct: GetMarketStatsInfo = serde_json::from_str(&response).expect("failed to parse JSON");
+    // println!("Response = {:?}",_parsed_struct);
+
+    Ok(())
+
+}
+
+fn get_market_price_info() -> Result<(), Error> {
+    let mut url: String = DATA_API_ENDPOINT.to_owned();
+    let url_appendage: &str = "market/data/prices";
+    url.push_str(url_appendage);
+
+    // println!("{}", url);
+
+    let user_string = format!("?symbol={}", SYMBOL);
+    url.push_str(&user_string);
+
+    let response = get(url)?
+        .text()?;
+
+    let _parsed_struct: GetMarketPriceInfo = serde_json::from_str(&response).expect("failed to parse JSON");
+    // println!("Response = {:?}", _parsed_struct);
 
     Ok(())
 }
@@ -57,7 +172,7 @@ fn get_open_interest() -> Result <(), Error> {
 
     let _parsed_struct: GetOpenInterest = serde_json::from_str(&response).expect("Failed to parse JSON");
 
-    println!("{:?}", _parsed_struct);
+    // println!("{:?}", _parsed_struct);
     Ok(())
     
 }
@@ -78,7 +193,7 @@ fn get_order_book(ob_depth: u32, ob_granularity: f64)  -> Result <(), Error> {
     let user_string = format!("?symbol={}&depth={}&granularity={}", body.symbol, body.depth, body.granularity);
     url.push_str(&user_string);
 
-    // println!("{}", url);
+    println!("{}", url);
 
     let start_time: Instant = Instant::now();
     // Send a GET request
@@ -104,7 +219,7 @@ fn get_market_inventory() -> Result <(), Error> {
     let url_appendage: &str = "market/inventory";
     url.push_str(url_appendage);
 
-    // println!("{}", url);
+    println!("{}", url);
 
     let start_time: Instant = Instant::now();
     // Send a GET request
