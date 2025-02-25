@@ -420,3 +420,144 @@ pub mod account_history_api_response {
     }
 }
 
+pub mod order_details {
+    use serde::{Deserialize, Serialize};
+
+    // {
+    //     "symbol": "BTC/USDT-P",
+    //     "side": "ASK",
+    //     "nonce": 1714701600000000,
+    //     "quantity": "1 BTC", 
+    //     "price": "100,000 USDT",
+    //     "maxFees": 0,
+    //   }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct OrderDetails {
+        pub symbol: String,
+        pub side: String,
+        pub nonce: String,
+        pub quantity: f64,
+        pub price: f64,
+        pub maxFees: u32,
+    }
+}
+
+
+pub mod account_info_api_response {
+    use serde::{Deserialize, Serialize};    
+
+    // {
+    //     "assets": [
+    //       {
+    //         "quantity": "13.110000",
+    //         "symbol": "USDT"
+    //       }
+    //     ],
+    //     "balance": "13.110000",
+    //     "maximalWithdraw": "13.110000",
+    //     "numFreeTransfersRemaining": 100,
+    //     "positions": [
+    //     {
+    //         "direction": "Short",
+    //         "entryNotional": "10.302213",
+    //         "notionalValue": "10.225008",
+    //         "quantity": "0.004310550",
+    //         "symbol": "ETH/USDT-P",
+    //         "unrealizedFundingPnl": "0.000000",
+    //         "unrealizedTradingPnl": "0.077204"
+    //       },
+      
+    //     ],
+    // //     "totalOrderNotional": "0.000000",
+    //     "totalPositionNotional": "0.000000",
+    //     "totalUnrealizedFundingPnl": "0.000000",
+    //     "totalUnrealizedPnl": "0.000000",
+    //     "totalUnrealizedTradingPnl": "0.000000",
+    //     "tradeMakerFeeRate": "0.00015000",
+    //     "tradeTakerFeeRate": "0.00045000"
+    //   }
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct PositionInfo {
+        pub direction: String,
+        pub entryNotional: String,
+        pub notionalValue: String,
+        pub quantity: String,
+        pub unrealizedFundingPnl: String,
+        pub unrealizedTradingPnl: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct AssetInfo {
+        pub quantity: String,
+        pub symbol: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetAccountInfo {
+        pub assets: Vec<AssetInfo>,
+        pub balance: String,
+        pub maximalWithdraw: String,
+        pub numFreeTransfersRemaining: u32,
+        pub positions: Vec<PositionInfo>,
+        pub totalOrderNotional: String,
+        pub totalPositionNotional: String,
+        pub totalUnrealizedFundingPnl: String,
+        pub totalUnrealizedPnl: String,
+        pub totalUnrealizedTradingPnl: String,
+        pub tradeMakerFeeRate: String,
+        pub tradeTakerFeeRate: String,
+    }
+}
+
+pub mod account_trades_api_response {
+    use serde::{Deserialize, Serialize};    
+
+    // {
+    //     "trades": [
+    //       {
+    //         "askAccountId": 126,
+    //         "askOrderId": 582869893016453100,
+    //         "bidAccountId": 131,
+    //         "bidOrderId": 582869893208343600,
+    //         "fee": "0.141460",
+    //         "id": 1818286,
+    //         "orderType": "LIMIT",
+    //         "price": "2369.078949",
+    //         "quantity": "0.398074810",
+    //         "realizedPnl": "0.000000",
+    //         "side": "Sell",
+    //         "symbol": "ETH/USDT-P",
+    //         "timestamp": 1728516134
+    //       },
+    //     ]
+    //   }
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Trades {
+        pub askAccountId: u32,
+        pub askOrderId: u64,
+        pub bidAccountId: u32,
+        pub bidOrderId: u64,
+        pub fee: String,
+        pub id: u32,
+        pub orderType: String,
+        pub price: String,
+        pub quantity: String,
+        pub realizedPnL: String,
+        pub side: String,
+        pub symbol: String,
+        pub timestamp: u32,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetAccountTrades {
+        pub trades: Vec<Trades>,
+    }
+}
+
