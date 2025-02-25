@@ -561,3 +561,77 @@ pub mod account_trades_api_response {
     }
 }
 
+pub mod settled_trades_api_response {
+    use serde::{Deserialize, Serialize};    
+
+    // {
+    //     "settlements": [
+    //       {
+    //         "direction": "Short",
+    //         "indexPrice": "57202.23399",
+    //         "quantity": "0.2409505256",
+    //         "settledAmount": "4.271524297077262",
+    //         "symbol": "BTC/USDT-P",
+    //         "timestamp": 1720512543
+    //       }
+    //     ]
+    //   }
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Settlement {
+        pub direction: String,
+        pub indexPrice: String,
+        pub quantity: String,
+        pub settledAmount: String,
+        pub symbol: String,
+        pub timestamp: u32,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct GetSettledTrades {
+        pub settlements: Vec<Settlement>,
+    }
+}
+
+pub mod pending_orders_api_response {
+    use serde::{Deserialize, Serialize};    
+
+//   {
+//     "accountId": 126,
+//     "availableQuantity": "0.389560448",
+//     "contractId": 1,
+//     "creationTime": 1731609679,
+//     "orderId": "582870002718998528",
+//     "orderType": "LIMIT",
+//     "price": "2344.032723",
+//     "side": "BID",
+//     "status": "PLACED",
+//     "symbol": "ETH/USDT-P",
+//     "totalQuantity": "0.389560448"
+//   },
+
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct PendingOrders {
+        pub accountId: u32,
+        pub availableQuantity: String,
+        pub contractId: u32,
+        pub creationTime: u32,
+        pub orderId: String,
+        pub orderType: String,
+        pub price: String,
+        pub side: String,
+        pub status: String,        
+        pub symbol: String,
+        pub totalQuantity: String,
+    }
+
+    // #[allow(non_snake_case)]
+    // #[derive(Debug, Serialize, Deserialize)]
+    // pub struct GetPendingOrders {
+    //     pub orders: Vec<PendingOrders>,
+    // }
+}
+

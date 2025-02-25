@@ -10,7 +10,7 @@ use std::time::{Duration, Instant};
 mod api_struct;
 use api_struct::{get_orderbook_data_api_body::*, market_inventory_api_response::*,open_interest_api_response::*, orderbook_data_api_response::*, price_info_api_response::GetMarketPriceInfo, market_stats_api_response::*};
 use api_struct::{market_trades_api_response::*, market_klines_api_response::*, account_balance_api_response::*, account_history_api_response::*, order_details::*, account_info_api_response::*};
-use api_struct::{account_trades_api_response::*};
+use api_struct::{account_trades_api_response::*, settled_trades_api_response::*, pending_orders_api_response::*};
 
 const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
 const ACCOUNT_API_ENDPOINT: &str = "https://api.hibachi.xyz/";
@@ -32,10 +32,59 @@ fn main() {
     let _response = get_account_history(&_hibachi_account_id, &_hibachi_api_key);
     let _response = get_account_info(&_hibachi_account_id, &_hibachi_api_key);
     let _response = get_account_trades(&_hibachi_account_id, &_hibachi_api_key);
-    
-    
-    // let _response = place_order(order_details);
+    let _response = get_setttled_trades(&_hibachi_account_id, &_hibachi_api_key);
+    let _response = get_pending_orders(&_hibachi_account_id, &_hibachi_api_key);
 
+    // let _response = place_order(order_details);
+}
+
+fn get_pending_orders(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+    let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
+    let url_appendage: &str = "trade/orders";
+    url.push_str(url_appendage);
+
+    let user_string = format!("?accountId={}", account_id);
+    url.push_str(&user_string);
+
+    println!("{}", url);
+
+    let client: Client = Client::new();
+
+    let response = client
+        .get(url) // GET request with query parameter
+        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .send()?; // Send the request
+
+    type GetPendingOrders = Vec<PendingOrders>;
+
+    let _parsed_struct: GetPendingOrders = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
+    println!("{:?}", _parsed_struct);
+
+    Ok(())
+}
+
+
+fn get_setttled_trades(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+    let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
+    let url_appendage: &str = "trade/account/settlements_history";
+    url.push_str(url_appendage);
+
+    let user_string = format!("?accountId={}", account_id);
+    url.push_str(&user_string);
+
+    println!("{}", url);
+
+    let client: Client = Client::new();
+
+    let response = client
+        .get(url) // GET request with query parameter
+        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .send()?; // Send the request
+
+    let _parsed_struct: GetSettledTrades = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
+    // println!("{:?}", _parsed_struct);
+
+    Ok(())
 }
 
 fn get_account_trades(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
