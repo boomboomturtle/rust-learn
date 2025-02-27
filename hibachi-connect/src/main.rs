@@ -41,15 +41,15 @@ fn main() {
     let _response = get_market_trades();
     let _response = get_market_klines("1h".to_owned(), None, None);
     let _response = get_account_balance();
-    // let _response = get_account_history(&_hibachi_account_id, &_hibachi_api_key);
-    // let _response = get_account_info(&_hibachi_account_id, &_hibachi_api_key);
-    // let _response = get_account_trades(&_hibachi_account_id, &_hibachi_api_key);
-    // let _response = get_setttled_trades(&_hibachi_account_id, &_hibachi_api_key);
-    // let _response = get_pending_orders(&_hibachi_account_id, &_hibachi_api_key);
-    // let _response = place_order(&_hibachi_account_id, &_hibachi_api_key, 0.0, 0.0, "LIMIT".to_owned());
+    let _response = get_account_history();
+    let _response = get_account_info();
+    let _response = get_account_trades();
+    let _response = get_setttled_trades();
+    let _response = get_pending_orders();
+    let _response = place_order(0.0, 0.0, "LIMIT".to_owned());
 }
 
-fn place_order(account_id: &String, hibachi_api_key: &String, price: f64, quantity: f64, order_type: String) -> Result<(), Error> {
+fn place_order(price: f64, quantity: f64, order_type: String) -> Result<(), Error> {
 
     // Signing Part
     // nonce
@@ -94,12 +94,12 @@ fn place_order(account_id: &String, hibachi_api_key: &String, price: f64, quanti
 }
 
 
-fn get_pending_orders(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+fn get_pending_orders() -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
     let url_appendage: &str = "trade/orders";
     url.push_str(url_appendage);
 
-    let user_string = format!("?accountId={}", account_id);
+    let user_string = format!("?accountId={}", *HIBACHI_ACCOUNT_ID);
     url.push_str(&user_string);
 
     println!("{}", url);
@@ -108,24 +108,24 @@ fn get_pending_orders(account_id: &String, hibachi_api_key: &String) -> Result<(
 
     let response = client
         .get(url) // GET request with query parameter
-        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned()) // Authorization header
         .send()?; // Send the request
 
     type GetPendingOrders = Vec<PendingOrders>;
 
     let _parsed_struct: GetPendingOrders = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
-    println!("{:?}", _parsed_struct);
+    // println!("{:?}", _parsed_struct);
 
     Ok(())
 }
 
 
-fn get_setttled_trades(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+fn get_setttled_trades() -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
     let url_appendage: &str = "trade/account/settlements_history";
     url.push_str(url_appendage);
 
-    let user_string = format!("?accountId={}", account_id);
+    let user_string = format!("?accountId={}", *HIBACHI_ACCOUNT_ID);
     url.push_str(&user_string);
 
     println!("{}", url);
@@ -134,7 +134,7 @@ fn get_setttled_trades(account_id: &String, hibachi_api_key: &String) -> Result<
 
     let response = client
         .get(url) // GET request with query parameter
-        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned()) // Authorization header
         .send()?; // Send the request
 
     let _parsed_struct: GetSettledTrades = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
@@ -143,12 +143,12 @@ fn get_setttled_trades(account_id: &String, hibachi_api_key: &String) -> Result<
     Ok(())
 }
 
-fn get_account_trades(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+fn get_account_trades() -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
     let url_appendage: &str = "trade/account/trades";
     url.push_str(url_appendage);
 
-    let user_string = format!("?accountId={}", account_id);
+    let user_string = format!("?accountId={}", *HIBACHI_ACCOUNT_ID);
     url.push_str(&user_string);
 
     println!("{}", url);
@@ -157,7 +157,7 @@ fn get_account_trades(account_id: &String, hibachi_api_key: &String) -> Result<(
 
     let response = client
         .get(url) // GET request with query parameter
-        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned()) // Authorization header
         .send()?; // Send the request
 
     // println!("{:?}", response.status());
@@ -165,17 +165,17 @@ fn get_account_trades(account_id: &String, hibachi_api_key: &String) -> Result<(
     // println!("{:?}", response.text());
 
     let _parsed_struct: GetAccountTrades = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
-    println!("{:?}", _parsed_struct);
+    // println!("{:?}", _parsed_struct);
 
     Ok(())
 }
 
-fn get_account_info(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+fn get_account_info() -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
     let url_appendage: &str = "trade/account/info";
     url.push_str(url_appendage);
 
-    let user_string = format!("?accountId={}", account_id);
+    let user_string = format!("?accountId={}", *HIBACHI_ACCOUNT_ID);
     url.push_str(&user_string);
 
     println!("{}", url);
@@ -184,7 +184,7 @@ fn get_account_info(account_id: &String, hibachi_api_key: &String) -> Result<(),
 
     let response = client
         .get(url) // GET request with query parameter
-        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned()) // Authorization header
         .send()?; // Send the request
 
     // println!("{:?}", response.status());
@@ -202,12 +202,12 @@ fn get_account_info(account_id: &String, hibachi_api_key: &String) -> Result<(),
 // }
 
 
-fn get_account_history(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+fn get_account_history() -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
     let url_appendage: &str = "capital/history";
     url.push_str(url_appendage);
 
-    let user_string = format!("?accountId={}", account_id);
+    let user_string = format!("?accountId={}", *HIBACHI_ACCOUNT_ID);
     url.push_str(&user_string);
 
     println!("{}", url);
@@ -216,7 +216,7 @@ fn get_account_history(account_id: &String, hibachi_api_key: &String) -> Result<
 
     let response = client
         .get(url) // GET request with query parameter
-        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned()) // Authorization header
         .send()?; // Send the request
 
     // println!("{:?}", response.text()?);
@@ -257,7 +257,7 @@ fn get_account_balance() -> Result<(), Error> {
     // println!("{:?}", response);
     let _parsed_struct: GetAccountBalance = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
 
-    println!("{:?}", _parsed_struct);
+    // println!("{:?}", _parsed_struct);
     
     Ok(())
 }
