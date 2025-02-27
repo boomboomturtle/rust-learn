@@ -1,9 +1,11 @@
 use std::env;
+use once_cell::sync::Lazy;
 // use std::fmt::format;
 use reqwest::blocking::{get, Client};
 use reqwest::header::AUTHORIZATION;
 use reqwest::Error;
 
+use chrono::{TimeZone, Utc};
 use std::time::{Duration, Instant};
 // use serde_json::Value;
 
@@ -16,8 +18,18 @@ const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
 const ACCOUNT_API_ENDPOINT: &str = "https://api.hibachi.xyz/";
 const SYMBOL: &str = "ETH/USDT-P";
 
+static HIBACHI_API_KEY: Lazy<String> = Lazy::new(|| {
+    env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set")
+});
+
+static HIBACHI_ACCOUNT_ID: Lazy<String> = Lazy::new(|| {
+    env::var("HIBACHI_ACCOUNT_ID").expect("HIBACHI_ACCOUNT_ID not set")
+});
+
 fn main() {
-    let _hibachi_api_key: String = env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set");
+
+
+    // let _hibachi_api_key: String = env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set");
     let _hibachi_private_key: String = env::var("HIBACHI_PRIVATE_KEY").expect("HIBACHI_PRIVATE_KEY not set");
     let _hibachi_account_id: String = env::var("HIBACHI_ACCOUNT_ID").expect("HIBACHI_ACCOUNT_ID not set");
 
@@ -28,15 +40,59 @@ fn main() {
     let _response = get_market_stats();
     let _response = get_market_trades();
     let _response = get_market_klines("1h".to_owned(), None, None);
-    let _response = get_account_balance(&_hibachi_account_id, &_hibachi_api_key);
-    let _response = get_account_history(&_hibachi_account_id, &_hibachi_api_key);
-    let _response = get_account_info(&_hibachi_account_id, &_hibachi_api_key);
-    let _response = get_account_trades(&_hibachi_account_id, &_hibachi_api_key);
-    let _response = get_setttled_trades(&_hibachi_account_id, &_hibachi_api_key);
-    let _response = get_pending_orders(&_hibachi_account_id, &_hibachi_api_key);
-
-    // let _response = place_order(order_details);
+    let _response = get_account_balance();
+    // let _response = get_account_history(&_hibachi_account_id, &_hibachi_api_key);
+    // let _response = get_account_info(&_hibachi_account_id, &_hibachi_api_key);
+    // let _response = get_account_trades(&_hibachi_account_id, &_hibachi_api_key);
+    // let _response = get_setttled_trades(&_hibachi_account_id, &_hibachi_api_key);
+    // let _response = get_pending_orders(&_hibachi_account_id, &_hibachi_api_key);
+    // let _response = place_order(&_hibachi_account_id, &_hibachi_api_key, 0.0, 0.0, "LIMIT".to_owned());
 }
+
+fn place_order(account_id: &String, hibachi_api_key: &String, price: f64, quantity: f64, order_type: String) -> Result<(), Error> {
+
+    // Signing Part
+    // nonce
+    // contractId
+    // quantity
+    // side
+    // price
+    // maxFeesPercent, should be at least the returned value of /market/exchange-info endpoint. Otherwise, it will be rejected.
+    // creationDeadline (Optional)
+    // triggerPrice (Optional)
+
+    // Order details:
+    // accountId :should be one of: LIMIT, MARKET
+    // symbol: should be one of the symbol from one of the futureContracts returned by /market/exchange-info API
+    // nonce: should be a unix timestamp either ms or us unique to this order
+    // side: should be one of: ASK, BID
+    // orderType
+    // quantity
+    // price
+    // siganture
+    // maxFeesPercent
+
+    // "accountId": 128,
+    // "symbol": "ETH/USDT-P",
+    // "nonce": 1714701600000000,
+    // "orderType": "LIMIT",
+    // "side": "BID",
+    // "quantity": "1.2",
+    // "price": "3500.1",
+    // "signature": "0000000000000000000000000000000000000000000000000000000000000000",
+    // "maxFeesPercent": "0.00045"
+
+    let now = Utc::now();
+    let nonce: i64 = now.timestamp_micros();
+    println!("nonce = {}", nonce);
+
+    // 0xe8100c48581d7944152ba7666b4128c9fc491d30d4bd702f717477d9a6a54ae3
+    // NxnTqs8U3KHwD6D6d5Lxw3XEEQiLT0z9lT_ghmC8TpQ=
+    // 0x02822208f111ea2a00e06a607681123caf740ba4b65df21bcd19920727a8715d43956dc3aca1caf9ec7b3b2bc29318222bbfebbed5c608b6176617b3e849adc3
+
+    Ok(())
+}
+
 
 fn get_pending_orders(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
@@ -114,8 +170,6 @@ fn get_account_trades(account_id: &String, hibachi_api_key: &String) -> Result<(
     Ok(())
 }
 
-// https://api.hibachi.xyz/trade/account/trades?accountId=<accountId>
-
 fn get_account_info(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
     let url_appendage: &str = "trade/account/info";
@@ -173,12 +227,12 @@ fn get_account_history(account_id: &String, hibachi_api_key: &String) -> Result<
 }
 
 
-fn get_account_balance(account_id: &String, hibachi_api_key: &String) -> Result<(), Error> {
+fn get_account_balance() -> Result<(), Error> {
     let mut url: String = ACCOUNT_API_ENDPOINT.to_owned();
     let url_appendage: &str = "capital/balance";
     url.push_str(url_appendage);
 
-    let user_string = format!("?accountId={}", account_id);
+    let user_string = format!("?accountId={}", *HIBACHI_ACCOUNT_ID);
     url.push_str(&user_string);
 
     println!("{}", url);
@@ -187,7 +241,7 @@ fn get_account_balance(account_id: &String, hibachi_api_key: &String) -> Result<
 
     let response = client
         .get(url) // GET request with query parameter
-        .header(AUTHORIZATION, hibachi_api_key) // Authorization header
+        .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned()) // Authorization header
         .send()?; // Send the request
 
     // println!("Response Body: {}", response.text()?);
@@ -200,10 +254,10 @@ fn get_account_balance(account_id: &String, hibachi_api_key: &String) -> Result<
     //     println!("Error: {}", response.status());
     // }
 
-    // println!("{}", response);
+    // println!("{:?}", response);
     let _parsed_struct: GetAccountBalance = serde_json::from_str(&response.text()?).expect("Failed to parse JSON");
 
-    // println!("{:?}", _parsed_struct);
+    println!("{:?}", _parsed_struct);
     
     Ok(())
 }
