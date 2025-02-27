@@ -5,7 +5,7 @@ use reqwest::blocking::{get, Client};
 use reqwest::header::AUTHORIZATION;
 use reqwest::Error;
 
-use chrono::{TimeZone, Utc};
+use chrono::Utc;
 use std::time::{Duration, Instant};
 // use serde_json::Value;
 
@@ -17,6 +17,7 @@ use api_struct::{account_trades_api_response::*, settled_trades_api_response::*,
 const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
 const ACCOUNT_API_ENDPOINT: &str = "https://api.hibachi.xyz/";
 const SYMBOL: &str = "ETH/USDT-P";
+const CONTRACT_ID: u32 = 2;
 
 static HIBACHI_API_KEY: Lazy<String> = Lazy::new(|| {
     env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set")
@@ -25,6 +26,18 @@ static HIBACHI_API_KEY: Lazy<String> = Lazy::new(|| {
 static HIBACHI_ACCOUNT_ID: Lazy<String> = Lazy::new(|| {
     env::var("HIBACHI_ACCOUNT_ID").expect("HIBACHI_ACCOUNT_ID not set")
 });
+
+#[derive(Debug, PartialEq)]
+enum OrderSide {
+    ASK,
+    BID,
+}
+
+#[derive(Debug, PartialEq)]
+enum OrderType {
+    LIMIT,
+    MARKET,
+}
 
 fn main() {
 
@@ -46,19 +59,19 @@ fn main() {
     let _response = get_account_trades();
     let _response = get_setttled_trades();
     let _response = get_pending_orders();
-    let _response = place_order(0.0, 0.0, "LIMIT".to_owned());
+    let _response = place_order(100000.0, 0.0,OrderSide::ASK, OrderType::LIMIT);
 }
 
-fn place_order(price: f64, quantity: f64, order_type: String) -> Result<(), Error> {
+fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) -> Result<(), Error> {
 
     // Signing Part
-    // nonce
-    // contractId
-    // quantity
-    // side
-    // price
-    // maxFeesPercent, should be at least the returned value of /market/exchange-info endpoint. Otherwise, it will be rejected.
-    // creationDeadline (Optional)
+    // nonce: 8 bytes
+    // contractId: 4 bytes
+    // quantity: 8 bytes
+    // side: 4 bytes
+    // price: 8 bytes
+    // maxFeesPercent, should be at least the returned value of /market/exchange-info endpoint. Otherwise, it will be rejected : 8 bytes
+    // creationDeadline (Optional): 
     // triggerPrice (Optional)
 
     // Order details:
@@ -83,8 +96,31 @@ fn place_order(price: f64, quantity: f64, order_type: String) -> Result<(), Erro
     // "maxFeesPercent": "0.00045"
 
     let now = Utc::now();
-    let nonce: i64 = now.timestamp_micros();
-    println!("nonce = {}", nonce);
+    let nonce: i64 = 1714701600000000; // now.timestamp_micros();
+
+    let order_side = match side {
+        OrderSide::ASK => "ASK".to_string(),
+        OrderSide::BID => "BID".to_string(),
+    };
+
+    let order_type = match o_type {
+        OrderType::LIMIT => "LIMIT".to_string(),
+        OrderType::MARKET => "MARKET".to_string(),
+    };
+
+    // let signature = construct_signature(nonce, CONTRACT_ID, quantity, order_side, price, max_fees_percent);
+
+
+    let price_f128 = (price * (1u64 << 32) as f64*10f64.powi(-4)) as u128;
+
+    println!("price_u128={}", price_f128);
+
+    let max_fees_percent = 0;
+
+    let signature= format!("0x{:016x}{:08x}{:016x}{:016x}", nonce, CONTRACT_ID, price_f128, max_fees_percent);
+
+    println!("account_id = {}, symbol = {}, nonce = {}, order_type = {}, side = {}, quantity = {}, price = {}, signature = {}, maxFeesPercent = {}, contract_id = {}", 
+            *HIBACHI_ACCOUNT_ID, SYMBOL, nonce, order_type, order_side, quantity.to_string(), price.to_string(), signature, max_fees_percent, CONTRACT_ID);
 
     // 0xe8100c48581d7944152ba7666b4128c9fc491d30d4bd702f717477d9a6a54ae3
     // NxnTqs8U3KHwD6D6d5Lxw3XEEQiLT0z9lT_ghmC8TpQ=
