@@ -9,6 +9,12 @@ use chrono::Utc;
 use std::time::{Duration, Instant};
 // use serde_json::Value;
 
+use k256::ecdsa::{SigningKey, Signature, signature::Signer};
+use k256::SecretKey;
+use sha2::{Digest, Sha256};
+
+
+
 mod api_struct;
 use api_struct::{get_orderbook_data_api_body::*, market_inventory_api_response::*,open_interest_api_response::*, orderbook_data_api_response::*, price_info_api_response::GetMarketPriceInfo, market_stats_api_response::*};
 use api_struct::{market_trades_api_response::*, market_klines_api_response::*, account_balance_api_response::*, account_history_api_response::*, order_details::*, account_info_api_response::*};
@@ -27,6 +33,10 @@ static HIBACHI_ACCOUNT_ID: Lazy<String> = Lazy::new(|| {
     env::var("HIBACHI_ACCOUNT_ID").expect("HIBACHI_ACCOUNT_ID not set")
 });
 
+static HIBACHI_PRIVATE_KEY: Lazy<String> = Lazy::new(|| {
+    env::var("HIBACHI_PRIVATE_KEY").expect("HIBACHI_PRIVATE_KEY not set")
+});
+
 #[derive(Debug, PartialEq)]
 enum OrderSide {
     ASK,
@@ -40,12 +50,6 @@ enum OrderType {
 }
 
 fn main() {
-
-
-    // let _hibachi_api_key: String = env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set");
-    let _hibachi_private_key: String = env::var("HIBACHI_PRIVATE_KEY").expect("HIBACHI_PRIVATE_KEY not set");
-    let _hibachi_account_id: String = env::var("HIBACHI_ACCOUNT_ID").expect("HIBACHI_ACCOUNT_ID not set");
-
     let _response = get_market_inventory();
     let _response = get_order_book(1, 0.01);
     let _response = get_open_interest();
@@ -61,6 +65,7 @@ fn main() {
     let _response = get_pending_orders();
     let _response = place_order(100000.0, 0.0,OrderSide::ASK, OrderType::LIMIT);
 }
+
 
 fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) -> Result<(), Error> {
 
@@ -108,23 +113,21 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
         OrderType::MARKET => "MARKET".to_string(),
     };
 
-    // let signature = construct_signature(nonce, CONTRACT_ID, quantity, order_side, price, max_fees_percent);
-
-
     let price_f128 = (price * (1u64 << 32) as f64*10f64.powi(-4)) as u128;
 
     println!("price_u128={}", price_f128);
 
     let max_fees_percent = 0;
 
-    let signature= format!("0x{:016x}{:08x}{:016x}{:016x}", nonce, CONTRACT_ID, price_f128, max_fees_percent);
+    let signature= format!("{:016x}{:08x}{:016x}{:016x}", nonce, CONTRACT_ID, price_f128, max_fees_percent);
+     
+    // let signed_message = match sign_message(signature, HIBACHI_PRIVATE_KEY.to_string()) {
+    //     Ok(signed_value) => println!("Signature: 0x{}", signed_value),
+    //     Err(e) => eprintln!("Error: {}", e),
+    // }
 
-    println!("account_id = {}, symbol = {}, nonce = {}, order_type = {}, side = {}, quantity = {}, price = {}, signature = {}, maxFeesPercent = {}, contract_id = {}", 
+    println!("account_id = {}, symbol = {}, nonce = {}, order_type = {}, side = {}, quantity = {}, price = {}, signature = {:?}, maxFeesPercent = {}, contract_id = {}", 
             *HIBACHI_ACCOUNT_ID, SYMBOL, nonce, order_type, order_side, quantity.to_string(), price.to_string(), signature, max_fees_percent, CONTRACT_ID);
-
-    // 0xe8100c48581d7944152ba7666b4128c9fc491d30d4bd702f717477d9a6a54ae3
-    // NxnTqs8U3KHwD6D6d5Lxw3XEEQiLT0z9lT_ghmC8TpQ=
-    // 0x02822208f111ea2a00e06a607681123caf740ba4b65df21bcd19920727a8715d43956dc3aca1caf9ec7b3b2bc29318222bbfebbed5c608b6176617b3e849adc3
 
     Ok(())
 }
