@@ -2,3 +2,5 @@ set_env.sh
 /hibachi-connect/target
 /trial
 test.py
+hibachi-python/
+/websocket-connect/target

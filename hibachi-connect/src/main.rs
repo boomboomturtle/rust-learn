@@ -66,6 +66,34 @@ fn main() {
     let _response = place_order(100000.0, 0.0,OrderSide::ASK, OrderType::LIMIT);
 }
 
+fn sign_message(message: String, private_key: String) -> Result<String, Box<dyn std::error::Error>> {
+    // Remove "0x" prefix if present
+    let message = message.to_owned().trim_start_matches("0x");
+    let private_key = private_key.to_owned().trim_start_matches("0x");
+
+    // Decode the private key from hex
+    let secret_key_bytes = hex::decode(private_key)?;
+    let secret_key_array: [u8; 32] = secret_key_bytes
+        .as_slice()
+        .try_into()
+        .map_err(|_| "Invalid private key length")?;
+    let secret_key = SecretKey::from_bytes(&secret_key_array)?;
+    
+    // Create a signing key
+    let signing_key = SigningKey::from(secret_key);
+
+    // Hash the message using SHA-256
+    let mut hasher = Sha256::new();
+    hasher.update(hex::decode(message)?);
+    let message_hash = hasher.finalize();
+
+    // Sign the hashed message
+    let signature: Signature = signing_key.sign(&message_hash);
+
+    // Convert the signature to a hex string
+    Ok(hex::encode(signature.to_bytes()))
+}
+
 
 fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) -> Result<(), Error> {
 
@@ -121,13 +149,19 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
 
     let signature= format!("{:016x}{:08x}{:016x}{:016x}", nonce, CONTRACT_ID, price_f128, max_fees_percent);
      
-    // let signed_message = match sign_message(signature, HIBACHI_PRIVATE_KEY.to_string()) {
-    //     Ok(signed_value) => println!("Signature: 0x{}", signed_value),
-    //     Err(e) => eprintln!("Error: {}", e),
-    // }
+    let signed_message = match sign_message(signature, HIBACHI_PRIVATE_KEY.to_string()) {
+        Ok(signed_value) => println!("Signature: 0x{}", signed_value),
+        Err(e) => eprintln!("Error: {}", e),
+    }
 
     println!("account_id = {}, symbol = {}, nonce = {}, order_type = {}, side = {}, quantity = {}, price = {}, signature = {:?}, maxFeesPercent = {}, contract_id = {}", 
-            *HIBACHI_ACCOUNT_ID, SYMBOL, nonce, order_type, order_side, quantity.to_string(), price.to_string(), signature, max_fees_percent, CONTRACT_ID);
+            *HIBACHI_ACCOUNT_ID, SYMBOL, nonce, order_type, order_side, quantity.to_string(), price.to_string(), signed_message, max_fees_percent, CONTRACT_ID);
+
+    println!("Signed Message = {:?}", signed_message);
+
+    // 0xe8100c48581d7944152ba7666b4128c9fc491d30d4bd702f717477d9a6a54ae3
+    // NxnTqs8U3KHwD6D6d5Lxw3XEEQiLT0z9lT_ghmC8TpQ=
+    // 0x02822208f111ea2a00e06a607681123caf740ba4b65df21bcd19920727a8715d43956dc3aca1caf9ec7b3b2bc29318222bbfebbed5c608b6176617b3e849adc3
 
     Ok(())
 }
