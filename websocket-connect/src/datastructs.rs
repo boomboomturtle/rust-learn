@@ -2,34 +2,49 @@ pub mod special_data_types {
     use serde::{Deserialize, Deserializer, Serialize};
     use std::str::FromStr;
     
-    // #[allow(non_snake_case)]
-    // #[derive(Debug, Serialize, Deserialize)]
-    // pub struct OrderbookData {
-    //     data: OrderbookData,
-    //     depth: u32,
-    //     granularity: String,
-    //     messageType: String,
-    //     symbol: String,
-    //     topic: String
-    // }
-
-    // #[allow(non_snake_case)]
-    // #[derive(Debug, Serialize, Deserialize)]
-    // pub struct Orderbook {
-    //     data: OrderbookData,
-    //     depth: u32,
-    //     granularity: String,
-    //     messageType: String,
-    //     symbol: String,
-    //     topic: String
-    // }
-
     fn str_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
     where
         D: Deserializer<'de>,
     {
         let s: &str = Deserialize::deserialize(deserializer)?;
         f64::from_str(s).map_err(serde::de::Error::custom)
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct LevelData {
+        #[serde(deserialize_with = "str_to_f64")]
+        price: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        quantity: f64,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct PriceData {
+        #[serde(deserialize_with = "str_to_f64")]
+        endPrice: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        startPrice: f64,
+        levels: Vec<LevelData>,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct OrderbookData {
+        ask: PriceData,
+        bid: PriceData,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct Orderbook {
+        data: OrderbookData,
+        depth: u32,
+        granularity: String,
+        messageType: String,
+        symbol: String,
+        topic: String
     }
     
     #[allow(non_snake_case)]

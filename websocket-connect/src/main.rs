@@ -40,6 +40,9 @@ async fn orderbook_sub(ob_json_string: String, ob_url: Url) {
                 
             while let Some(Ok(message)) = ws_stream.next().await {
                 println!("Received {}", message);
+
+                let _parsed_struct: Orderbook = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
+                println!("{:?}", _parsed_struct);
             };
 
         }
@@ -66,7 +69,7 @@ async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
             print_type(&ws_stream);
                 
             while let Some(Ok(message)) = ws_stream.next().await {
-                println!("Received {}", message);
+                // println!("Received {}", message);
 
                 let _parsed_struct: FundingRate = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
                 println!("{:?}", _parsed_struct);
