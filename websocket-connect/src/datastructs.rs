@@ -14,37 +14,37 @@ pub mod special_data_types {
     #[derive(Debug, Serialize, Deserialize)]
     pub struct LevelData {
         #[serde(deserialize_with = "str_to_f64")]
-        price: f64,
+        pub price: f64,
         #[serde(deserialize_with = "str_to_f64")]
-        quantity: f64,
+        pub quantity: f64,
     }
 
     #[allow(non_snake_case)]
     #[derive(Debug, Serialize, Deserialize)]
     pub struct PriceData {
         #[serde(deserialize_with = "str_to_f64")]
-        endPrice: f64,
+        pub endPrice: f64,
         #[serde(deserialize_with = "str_to_f64")]
-        startPrice: f64,
-        levels: Vec<LevelData>,
+        pub startPrice: f64,
+        pub levels: Vec<LevelData>,
     }
 
     #[allow(non_snake_case)]
     #[derive(Debug, Serialize, Deserialize)]
     pub struct OrderbookData {
-        ask: PriceData,
-        bid: PriceData,
+        pub ask: PriceData,
+        pub bid: PriceData,
     }
 
     #[allow(non_snake_case)]
     #[derive(Debug, Serialize, Deserialize)]
     pub struct Orderbook {
-        data: OrderbookData,
-        depth: u32,
-        granularity: String,
-        messageType: String,
-        symbol: String,
-        topic: String
+        pub data: OrderbookData,
+        pub depth: u32,
+        pub granularity: String,
+        pub messageType: String,
+        pub symbol: String,
+        pub topic: String
     }
     
     #[allow(non_snake_case)]

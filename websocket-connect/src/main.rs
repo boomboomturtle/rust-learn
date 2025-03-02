@@ -10,8 +10,33 @@ use std::any::type_name;
 mod datastructs;
 use datastructs::special_data_types::*;
 
-// static mut curr_ob: Orderbook::new()
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
 
+
+
+static CURR_OB: Lazy<Mutex<OrderbookData>> = Lazy::new(|| Mutex::new( OrderbookData {
+                                                                            bid: PriceData {
+                                                                                endPrice: 0.0,
+                                                                                startPrice: 0.0,
+                                                                                levels :vec![LevelData {
+                                                                                    price: 0.0,
+                                                                                    quantity: 0.0,
+                                                                                }],
+                                                                            },
+                                                                            ask: PriceData {
+                                                                                endPrice: 0.0,
+                                                                                startPrice: 0.0,
+                                                                                levels : vec![LevelData {
+                                                                                    price: 0.0,
+                                                                                    quantity: 0.0,
+                                                                                }],
+                                                                            },
+                                                                        }
+                                                            ));
+    
+    
+    
 // #[derive(Debug, PartialEq)]
 // enum OrderbookMessageType {
 //     Update,
@@ -36,13 +61,21 @@ async fn orderbook_sub(ob_json_string: String, ob_url: Url) {
                     Err(e) => println!("Message failed = {}", e),
                 }
 
-            print_type(&ws_stream);
+            // print_type(&ws_stream);
                 
             while let Some(Ok(message)) = ws_stream.next().await {
                 println!("Received {}", message);
 
                 let _parsed_struct: Orderbook = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
-                println!("{:?}", _parsed_struct);
+                if _parsed_struct.messageType == "Snapshot" {
+                    // CURR_OB = Lazy::new(|| Mutex::new(_parsed_struct.data));; // _parsed_struct.data;
+                    let mut data_value = CURR_OB.lock().unwrap();
+                    data_value.ask = _parsed_struct.data.ask;
+                    data_value.bid = _parsed_struct.data.bid;
+
+                    println!("Updated orderbook: {:?}", data_value);
+                }
+                // println!("{:?}", _parsed_struct);
             };
 
         }
@@ -66,7 +99,7 @@ async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
                     Err(e) => println!("Message failed = {}", e),
                 }
 
-            print_type(&ws_stream);
+            // print_type(&ws_stream);
                 
             while let Some(Ok(message)) = ws_stream.next().await {
                 // println!("Received {}", message);
@@ -163,3 +196,31 @@ async fn main() {
 //         ]
 //     }
 // }
+
+
+
+
+// static mut CURR_OB: Lazy<Mutex<Orderbook>> = Lazy::new(|| Mutex::new(Orderbook { depth: 0, 
+//     granularity: "0.01".to_string(), 
+//     messageType: "NoType".to_string(),
+//     symbol: "BLANK".to_string(),
+//     topic: "orderbook".to_string(),
+//     data: OrderbookData {
+//         bid: PriceData {
+//             endPrice: 0.0,
+//             startPrice: 0.0,
+//             levels :vec![LevelData {
+//                 price: 0.0,
+//                 quantity: 0.0,
+//             }],
+//         },
+//         ask: PriceData {
+//             endPrice: 0.0,
+//             startPrice: 0.0,
+//             levels : vec![LevelData {
+//                 price: 0.0,
+//                 quantity: 0.0,
+//             }],
+//         },
+//     }
+//     }));
