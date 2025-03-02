@@ -34,9 +34,15 @@ static CURR_OB: Lazy<Mutex<OrderbookData>> = Lazy::new(|| Mutex::new( OrderbookD
                                                                             },
                                                                         }
                                                             ));
-    
-    
-    
+        
+static CURR_FR: Lazy<Mutex<FundingRateEstimation>> = Lazy::new(|| Mutex::new( FundingRateEstimation {
+                                                                                    estimatedFundingRate: 0.0,
+                                                                                    nextFundingTimestamp: 100,
+                                                                                }
+                                                                    ));
+
+
+
 // #[derive(Debug, PartialEq)]
 // enum OrderbookMessageType {
 //     Update,
@@ -105,7 +111,14 @@ async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
                 // println!("Received {}", message);
 
                 let _parsed_struct: FundingRate = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
-                println!("{:?}", _parsed_struct);
+                if true {
+                    // CURR_OB = Lazy::new(|| Mutex::new(_parsed_struct.data));; // _parsed_struct.data;
+                    let mut data_value = CURR_FR.lock().unwrap();
+                    data_value.estimatedFundingRate = _parsed_struct.data.fundingRateEstimation.estimatedFundingRate;
+                    data_value.nextFundingTimestamp = _parsed_struct.data.fundingRateEstimation.nextFundingTimestamp;
+
+                    println!("Updated funding rate: {:?}", data_value);
+                }
             };
 
         }

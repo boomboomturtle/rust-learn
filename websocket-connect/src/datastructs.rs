@@ -51,20 +51,20 @@ pub mod special_data_types {
     #[derive(Debug, Serialize, Deserialize)]
     pub struct FundingRateEstimation {
         #[serde(deserialize_with = "str_to_f64")]
-        estimatedFundingRate: f64,
-        nextFundingTimestamp: u32,
+        pub estimatedFundingRate: f64,
+        pub nextFundingTimestamp: u32,
     }
 
     #[allow(non_snake_case)]
     #[derive(Debug, Serialize, Deserialize)]
     pub struct FundingRateData {
-        fundingRateEstimation: FundingRateEstimation,
+        pub fundingRateEstimation: FundingRateEstimation,
     }
 
     #[allow(non_snake_case)]
     #[derive(Debug, Serialize, Deserialize)]
     pub struct FundingRate {
-        data: FundingRateData,
+        pub data: FundingRateData,
         symbol: String,
         topic: String
     }
