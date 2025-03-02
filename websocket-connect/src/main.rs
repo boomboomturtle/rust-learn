@@ -1,11 +1,23 @@
 use serde_json::json;
-use tokio::net::{TcpListener, TcpStream};
+// use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
 use tokio_tungstenite::{connect_async, tungstenite::stream::MaybeTlsStream, WebSocketStream};
 use url::Url;
 use futures_util::{SinkExt};
 
 use std::any::type_name;
+
+mod datastructs;
+use datastructs::special_data_types::*;
+
+// static mut curr_ob: Orderbook::new()
+
+// #[derive(Debug, PartialEq)]
+// enum OrderbookMessageType {
+//     Update,
+//     Snapshot,
+// }
+
 
 fn print_type<T>(_: &T) {
     println!("Type: {}", type_name::<T>());
@@ -37,6 +49,8 @@ async fn orderbook_sub(ob_json_string: String, ob_url: Url) {
     }
 
 }
+// TODO: Orderbook data comes in 2 forms: Update and Snapshot: Update should update the orderbook and snapshot should give us a fresh copy.
+// Figure out how to update your notion of the orderbook with the two different types of data.
 
 async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
     match connect_async(ob_url).await {
@@ -53,6 +67,9 @@ async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
                 
             while let Some(Ok(message)) = ws_stream.next().await {
                 println!("Received {}", message);
+
+                let _parsed_struct: FundingRate = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
+                println!("{:?}", _parsed_struct);
             };
 
         }
@@ -60,7 +77,6 @@ async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
             println!("Connection failed {}", e);
         }
     }
-
 
 }
 

@@ -4,3 +4,5 @@ set_env.sh
 test.py
 hibachi-python/
 /websocket-connect/target
+/websocket-connect/output.log
+questions.txt
