@@ -42,14 +42,6 @@ static CURR_FR: Lazy<Mutex<FundingRateEstimation>> = Lazy::new(|| Mutex::new( Fu
                                                                     ));
 
 
-
-// #[derive(Debug, PartialEq)]
-// enum OrderbookMessageType {
-//     Update,
-//     Snapshot,
-// }
-
-
 fn print_type<T>(_: &T) {
     println!("Type: {}", type_name::<T>());
 }
@@ -81,15 +73,15 @@ async fn orderbook_sub(ob_json_string: String, ob_url: Url) {
                 }
 
                 else if _parsed_struct.messageType == "Update" {
-                    // CURR_OB = Lazy::new(|| Mutex::new(_parsed_struct.data));; // _parsed_struct.data;
+                    
                     let mut data_value = CURR_OB.lock().unwrap();
-                    // data_value.ask = _parsed_struct.data.ask;
-                    // data_value.bid = _parsed_struct.data.bid;
+                    println!("Len of two messages: {} {}", _parsed_struct.data.ask.levels.len(), _parsed_struct.data.bid.levels.len());
+                    
+                    // LETS HANDLE THE BIDS FIRST
 
                     let mut curr_counter: usize = 0;
                     let mut update_counter: usize = 0;
 
-                    println!("Len of two messages: {} {}", _parsed_struct.data.ask.levels.len(), _parsed_struct.data.bid.levels.len());
                     println!("\nOrderbook updates incoming\n");
 
                     while (update_counter < (_parsed_struct.data.bid.levels.len())) && (curr_counter < (data_value.bid.levels.len())) {
@@ -150,14 +142,69 @@ async fn orderbook_sub(ob_json_string: String, ob_url: Url) {
                         }
                     }
 
+                    println!("====== BID DONE ====== ASK NOW =======");
+                    // LETS HANDLE THE ASKS NOW
+                    curr_counter = 0;
+                    update_counter = 0;
 
-                    // while (update_counter < _parsed_struct.data.ask) {
-                    //     if data_value.ask.levels[curr_counter].price == _parsed_struct.data.ask.levels.price {
+                    while (update_counter < (_parsed_struct.data.ask.levels.len())) && (curr_counter < (data_value.ask.levels.len())) {
+                        if data_value.ask.levels[curr_counter].price == _parsed_struct.data.ask.levels[update_counter].price {
+                            if _parsed_struct.data.ask.levels[update_counter].quantity == 0.0 {
+                                println!("current_evaluation: {} {} {} {}", _parsed_struct.data.ask.levels[update_counter].price, 
+                                                                            _parsed_struct.data.ask.levels[update_counter].quantity,
+                                                                            data_value.ask.levels[curr_counter].price, 
+                                                                            data_value.ask.levels[curr_counter].quantity);
+                                println!("DEL {} {} || ", _parsed_struct.data.ask.levels[update_counter].price, _parsed_struct.data.ask.levels[update_counter].quantity);
+                                println!("{} {}", update_counter, curr_counter);
+                                update_counter += 1;
 
-                    //     }
-                    // } 
-                    // Ask: low to high - snapshot, update
-                    // Bid: high to low - snapshot, update
+                                data_value.ask.levels.remove(curr_counter);
+                            }
+                            else {
+                                data_value.ask.levels[curr_counter].quantity = _parsed_struct.data.ask.levels[update_counter].quantity;
+                                println!("current_evaluation: {} {} {} {}", _parsed_struct.data.ask.levels[update_counter].price, 
+                                                                            _parsed_struct.data.ask.levels[update_counter].quantity,
+                                                                            data_value.ask.levels[curr_counter].price, 
+                                                                            data_value.ask.levels[curr_counter].quantity);
+
+                                println!("UPDATE QTY {} {} || ", _parsed_struct.data.ask.levels[update_counter].price, _parsed_struct.data.ask.levels[update_counter].quantity);
+                                println!("{} {}", update_counter, curr_counter);
+                                
+                                update_counter += 1;
+                                curr_counter += 1;
+                            }
+                        }
+                        else if data_value.ask.levels[curr_counter].price < _parsed_struct.data.ask.levels[update_counter].price {
+                            // let _ = 1 + 1;
+                            // break;
+                            // data_value.ask.levels.insert(curr_counter, LevelData { price: _parsed_struct.data.ask.levels[update_counter].price,
+                            //                                                 quantity: _parsed_struct.data.ask.levels[update_counter].quantity});
+                            println!("current_evaluation: {} {} {} {}", _parsed_struct.data.ask.levels[update_counter].price, 
+                                                                        _parsed_struct.data.ask.levels[update_counter].quantity,
+                                                                        data_value.ask.levels[curr_counter].price, 
+                                                                        data_value.ask.levels[curr_counter].quantity);
+                            
+                            println!("{} {}", update_counter, curr_counter);
+                            
+                            println!("SKIP LEVEL {} {} || ", _parsed_struct.data.ask.levels[update_counter].price, _parsed_struct.data.ask.levels[update_counter].quantity);
+                            curr_counter += 1;
+                            // update_counter += 1;
+                        }
+                        else {
+                            println!("current_evaluation: {} {} {} {}", _parsed_struct.data.ask.levels[update_counter].price, 
+                                                                        _parsed_struct.data.ask.levels[update_counter].quantity,
+                                                                        data_value.ask.levels[curr_counter].price, 
+                                                                        data_value.ask.levels[curr_counter].quantity);
+                            
+                            println!("INSERT {} {} || ", _parsed_struct.data.ask.levels[update_counter].price, _parsed_struct.data.ask.levels[update_counter].quantity);
+                            data_value.ask.levels.insert(curr_counter, LevelData { price: _parsed_struct.data.ask.levels[update_counter].price,
+                                quantity: _parsed_struct.data.ask.levels[update_counter].quantity});
+                            println!("{} {}", update_counter, curr_counter);
+                            update_counter += 1;
+                            curr_counter += 1;
+                        }
+                    }
+
 
                     println!("Updated orderbook: Update: {:?}", data_value);
                 }
