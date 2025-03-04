@@ -4,7 +4,7 @@ use tokio_stream::StreamExt;
 use tokio_tungstenite::{connect_async, tungstenite::stream::MaybeTlsStream, WebSocketStream};
 use url::Url;
 use futures_util::{SinkExt};
-
+use std::time::{Duration, Instant};
 use std::any::type_name;
 
 mod datastructs;
@@ -67,8 +67,6 @@ async fn orderbook_sub(ob_json_string: String, ob_url: Url) {
                     Err(e) => println!("Message failed = {}", e),
                 }
 
-            // print_type(&ws_stream);
-                
             while let Some(Ok(message)) = ws_stream.next().await {
                 println!("Received {}", message);
 
@@ -79,8 +77,91 @@ async fn orderbook_sub(ob_json_string: String, ob_url: Url) {
                     data_value.ask = _parsed_struct.data.ask;
                     data_value.bid = _parsed_struct.data.bid;
 
-                    println!("Updated orderbook: {:?}", data_value);
+                    println!("Updated orderbook: Snapshot: {:?}", data_value);
                 }
+
+                else if _parsed_struct.messageType == "Update" {
+                    // CURR_OB = Lazy::new(|| Mutex::new(_parsed_struct.data));; // _parsed_struct.data;
+                    let mut data_value = CURR_OB.lock().unwrap();
+                    // data_value.ask = _parsed_struct.data.ask;
+                    // data_value.bid = _parsed_struct.data.bid;
+
+                    let mut curr_counter: usize = 0;
+                    let mut update_counter: usize = 0;
+
+                    println!("Len of two messages: {} {}", _parsed_struct.data.ask.levels.len(), _parsed_struct.data.bid.levels.len());
+                    println!("\nOrderbook updates incoming\n");
+
+                    while (update_counter < (_parsed_struct.data.bid.levels.len())) && (curr_counter < (data_value.bid.levels.len())) {
+                        if data_value.bid.levels[curr_counter].price == _parsed_struct.data.bid.levels[update_counter].price {
+                            if _parsed_struct.data.bid.levels[update_counter].quantity == 0.0 {
+                                println!("current_evaluation: {} {} {} {}", _parsed_struct.data.bid.levels[update_counter].price, 
+                                                                            _parsed_struct.data.bid.levels[update_counter].quantity,
+                                                                            data_value.bid.levels[curr_counter].price, 
+                                                                            data_value.bid.levels[curr_counter].quantity);
+                                println!("DEL {} {} || ", _parsed_struct.data.bid.levels[update_counter].price, _parsed_struct.data.bid.levels[update_counter].quantity);
+                                println!("{} {}", update_counter, curr_counter);
+                                update_counter += 1;
+
+                                data_value.bid.levels.remove(curr_counter);
+                            }
+                            else {
+                                data_value.bid.levels[curr_counter].quantity = _parsed_struct.data.bid.levels[update_counter].quantity;
+                                println!("current_evaluation: {} {} {} {}", _parsed_struct.data.bid.levels[update_counter].price, 
+                                                                            _parsed_struct.data.bid.levels[update_counter].quantity,
+                                                                            data_value.bid.levels[curr_counter].price, 
+                                                                            data_value.bid.levels[curr_counter].quantity);
+
+                                println!("UPDATE QTY {} {} || ", _parsed_struct.data.bid.levels[update_counter].price, _parsed_struct.data.bid.levels[update_counter].quantity);
+                                println!("{} {}", update_counter, curr_counter);
+                                
+                                update_counter += 1;
+                                curr_counter += 1;
+                            }
+                        }
+                        else if data_value.bid.levels[curr_counter].price > _parsed_struct.data.bid.levels[update_counter].price {
+                            // let _ = 1 + 1;
+                            // break;
+                            // data_value.bid.levels.insert(curr_counter, LevelData { price: _parsed_struct.data.bid.levels[update_counter].price,
+                            //                                                 quantity: _parsed_struct.data.bid.levels[update_counter].quantity});
+                            println!("current_evaluation: {} {} {} {}", _parsed_struct.data.bid.levels[update_counter].price, 
+                                                                        _parsed_struct.data.bid.levels[update_counter].quantity,
+                                                                        data_value.bid.levels[curr_counter].price, 
+                                                                        data_value.bid.levels[curr_counter].quantity);
+                            
+                            println!("{} {}", update_counter, curr_counter);
+                            
+                            println!("SKIP LEVEL {} {} || ", _parsed_struct.data.bid.levels[update_counter].price, _parsed_struct.data.bid.levels[update_counter].quantity);
+                            curr_counter += 1;
+                            // update_counter += 1;
+                        }
+                        else {
+                            println!("current_evaluation: {} {} {} {}", _parsed_struct.data.bid.levels[update_counter].price, 
+                                                                        _parsed_struct.data.bid.levels[update_counter].quantity,
+                                                                        data_value.bid.levels[curr_counter].price, 
+                                                                        data_value.bid.levels[curr_counter].quantity);
+                            
+                            println!("INSERT {} {} || ", _parsed_struct.data.bid.levels[update_counter].price, _parsed_struct.data.bid.levels[update_counter].quantity);
+                            data_value.bid.levels.insert(curr_counter, LevelData { price: _parsed_struct.data.bid.levels[update_counter].price,
+                                quantity: _parsed_struct.data.bid.levels[update_counter].quantity});
+                            println!("{} {}", update_counter, curr_counter);
+                            update_counter += 1;
+                            curr_counter += 1;
+                        }
+                    }
+
+
+                    // while (update_counter < _parsed_struct.data.ask) {
+                    //     if data_value.ask.levels[curr_counter].price == _parsed_struct.data.ask.levels.price {
+
+                    //     }
+                    // } 
+                    // Ask: low to high - snapshot, update
+                    // Bid: high to low - snapshot, update
+
+                    println!("Updated orderbook: Update: {:?}", data_value);
+                }
+
                 // println!("{:?}", _parsed_struct);
             };
 
@@ -110,6 +191,7 @@ async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
             while let Some(Ok(message)) = ws_stream.next().await {
                 // println!("Received {}", message);
 
+                // let start_time: Instant = Instant::now();
                 let _parsed_struct: FundingRate = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
                 if true {
                     // CURR_OB = Lazy::new(|| Mutex::new(_parsed_struct.data));; // _parsed_struct.data;
@@ -119,6 +201,9 @@ async fn funding_rate_sub(ob_json_string: String, ob_url: Url) {
 
                     println!("Updated funding rate: {:?}", data_value);
                 }
+                // let elapsed: Duration = start_time.elapsed();    
+                // println!("Time taken to deserialize and parse: {:?}", elapsed);
+
             };
 
         }
@@ -237,3 +322,4 @@ async fn main() {
 //         },
 //     }
 //     }));
+

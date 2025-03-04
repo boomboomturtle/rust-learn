@@ -11,7 +11,7 @@ pub mod special_data_types {
     }
 
     #[allow(non_snake_case)]
-    #[derive(Debug, Serialize, Deserialize)]
+    #[derive(Debug, Serialize, Deserialize, Clone)]
     pub struct LevelData {
         #[serde(deserialize_with = "str_to_f64")]
         pub price: f64,
@@ -74,45 +74,216 @@ pub mod special_data_types {
 }
 
 
-// {
-//     "data": {
-//       "ask": {
-//         "endPrice": "2229.71",
-//         "levels": [
-//           {
-//             "price": "2224.58",
-//             "quantity": "0.035800000"
-//           }
-//         ],
-//         "startPrice": "2220.56"
-//       },
-//       "bid": {
-//         "endPrice": "2178.18",
-//         "levels": [
-//           {
-//             "price": "2218.37",
-//             "quantity": "18.195200000"
-//           },
-//           {
-//             "price": "2217.26",
-//             "quantity": "27.292800000"
-//           },
-//           {
-//             "price": "2216.15",
-//             "quantity": "45.452200000"
-//           },
-//           {
-//             "price": "2178.18",
-//             "quantity": "27.292800000"
-//           }
-//         ],
-//         "startPrice": "2219.31"
-//       }
+// Those are examples of message send by server
+// [
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "orderId": 578745035695106058,
+//             "price": "69762.24077",
+//             "quantity": "0.1288935088",
+//             "side": "BID",
+//             "symbol": "BTC/USDT-P",
+//             "timestamp": 1712781049,
+//             "nonce": 1714701600000000
+//         },
+//         "event": "order_creation"
 //     },
-//     "depth": 20,
-//     "granularity": "0.01",
-//     "messageType": "Update",
-//     "symbol": "ETH/USDT-P",
-//     "topic": "orderbook"
-//   }
-
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "orderId": 578745035695106058,
+//             "price": "69762.24077",
+//             "quantity": "0.1288935088",
+//             "side": "BID",
+//             "symbol": "BTC/USDT-P",
+//             "timestamp": 1712781049,
+//             "executed_quantity": "0.096987527"
+//         },
+//         "event": "order_update"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "orderId": 578745034376521742,
+//             "side": "ASK",
+//             "symbol": "DDNG/USDT-P",
+//             "timestamp": 1712781045
+//         },
+//         "event": "order_cancellation"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "depositQuantity": "123.000000"
+//         },
+//         "event": "balance_update"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "withdrawQuantity": "123.000000"
+//         },
+//         "event": "balance_update"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "updatedCollateralBalance": "1234.000000"
+//         },
+//         "event": "balance_update"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "isTaker": true,
+//             "orderId": "582871374158365696",
+//             "orderType": "Limit",
+//             "price": "2345.000000",
+//             "quantity": "0.000421590",
+//             "realizedPnl": "0.022107",
+//             "side": "BID",
+//             "symbol": "ETH/USDT-P",
+//             "timestamp": 1728526563
+//         },
+//         "event": "trade_update"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "symbol": "BTC/USDT-P",
+//             "updatedPosition": {
+//                 "direction": "Closed",
+//                 "entryNotional": "0.000000",
+//                 "quantity": "0.000000"
+//             }
+//         },
+//         "event": "position_update"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "symbol": "HFT/USDT-P",
+//             "updatedPosition": {
+//                 "direction": "Long",
+//                 "entryNotional": "11926.363515",
+//                 "quantity": "28179.202190"
+//             }
+//         },
+//         "event": "position_update"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "data": {
+//             "indexPrice": "61097.00801",
+//             "quantity": "0.5580484584",
+//             "settledAmount": "0.8618780736305764",
+//             "side": "Buy",
+//             "symbol": "BTC/USDT-P",
+//             "timestamp": 1719446400,
+//             "unrealizedFunding": "-734.608435"
+//         },
+//         "event": "funding_settlement"
+//     },
+//     {
+//         "account": "<accountId>",
+//         "event": "account_created",
+//         "data": {
+//             "ledgerAccountId": 123,
+//             "timestamp": 123456789
+//         }
+//     },
+//     {
+//         "event": "deposit_status_update",
+//         "account": "<accountId>",
+//         "data": {
+//             "depositQuantity": 1234,
+//             "depositTxnHash": "0xabcdef",
+//             "etaTsSecond": 10,
+//             "status": "Processing/Accepted/Rejected/Succeeded",
+//             "note": "Note"
+//         }
+//     },
+//     {
+//         "account": 2,
+//         "data": {
+//             "matchedQuantity": "0.000000004",
+//             "orderId": "3",
+//             "orderType": "MarketOrder",
+//             "remainingQuantity": "0.000000005",
+//             "symbol": "ETH/USDT-P",
+//             "timestamp": 123456789
+//         },
+//         "event": "order_not_fully_matched"
+//     },
+//     {
+//         "event": "order_request_rejected",
+//         "account": "<accountId>",
+//         "data": {
+//             "orderId": 1234,
+//             "error": "RiskLimitExceeded",
+//             "requestType": "Update/New"
+//         }
+//     },
+//     {
+//         "event": "stream_expired",
+//         "account": "<accountId>",
+//         "params": {
+//             "listenKey": "123",
+//             "timestampMs": 123456789
+//         }
+//     },
+//     {
+//         "event": "transfer_status_update",
+//         "sourceAccountId": "<accountId>",
+//         "data": {
+//             "transferQuantity": "1234",
+//             "destAccountPublicKey": "0xabcdef",
+//             "status": "Processing/Accepted/Rejected/Succeeded",
+//             "isInstantWithdrawal": true,
+//             "note": "Note"
+//         }
+//     },
+//     {
+//         "event": "withdraw_rejection",
+//         "account": "<accountId>",
+//         "data": {
+//             "withdraw_quantity": 1234,
+//             "timestamp": 123456789
+//         }
+//     },
+//     {
+//         "event": "withdraw_status_update",
+//         "account": "<accountId>",
+//         "data": {
+//             "withdrawQuantity": 1234,
+//             "withdrawAddress": "0xabcdef",
+//             "etaTsSecond": 10,
+//             "status": "Processing/Accepted/Rejected/Succeeded",
+//             "note": "Note"
+//         }
+//     },
+//     {
+//         "event": "order_matched",
+//         "account": "<accountId>",
+//         "data": {
+//             "orderId": 1234,
+//             "symbol": "ETH/USDT-P",
+//             "orderType": "LIMIT",
+//             "matchedQuantity": "1234",
+//             "remainingQuantity": "1234",
+//             "timestamp": 123456789,
+//             "nonce": 1714701600000000
+//         }
+//     },
+//     {
+//         "event": "trade_rejected",
+//         "account": "<accountId>",
+//         "data": {
+//             "symbol": "ETH/USDT-P",
+//             "orderId": 1234,
+//             "quantity": "1234",
+//             "timestamp": 123456789
+//         }
+//     }
+// ]
