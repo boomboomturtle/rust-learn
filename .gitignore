@@ -7,3 +7,5 @@ hibachi-python/
 /websocket-connect/output.log
 questions.txt
 logstudy.py
+/websocket-binance/target
+/websocket-binance/output.log
