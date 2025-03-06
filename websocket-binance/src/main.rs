@@ -2,14 +2,19 @@
 use tokio_stream::StreamExt;
 use tokio_tungstenite::{connect_async, tungstenite::stream::MaybeTlsStream, WebSocketStream};
 use url::Url;
-use futures_util::{SinkExt};
-use std::time::{Duration, Instant};
+use std::time::{SystemTime, UNIX_EPOCH};
+// use futures_util::{SinkExt};
+// use std::time::{Duration, Instant};
 // use std::any::type_name;
 
-use once_cell::sync::Lazy;
-use std::sync::Mutex;
+// use once_cell::sync::Lazy;
+// use std::sync::Mutex;
 
-const WS_URL: &str = "wss://fstream.binance.com/ws/btcusdt@depth@100ms";
+mod datastructs;
+use datastructs::{special_data_types::*};
+
+const WS_URL: &str = "wss://fstream.binance.com/ws/btcusdt@depth5@100ms";
+
 
 async fn orderbook_sub(ob_url: Url) {
     match connect_async(ob_url.to_string()).await {
@@ -17,7 +22,12 @@ async fn orderbook_sub(ob_url: Url) {
             println!("Websocket connected");
             
             while let Some(Ok(message)) = ws_stream.next().await {
-                println!("Received {}", message);
+                let start = SystemTime::now();
+                let since_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
+                
+                println!("Received {:?} {}", since_epoch.as_millis(), message);
+
+                let _parsed_struct: BinanceOrderbook = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
                 }
             }
 
@@ -38,3 +48,4 @@ async fn main() {
     let _ =tokio::join!(task_ob);
 }
 
+// PARSING THE OB IS INCOMPLETE
