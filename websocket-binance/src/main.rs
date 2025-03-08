@@ -1,9 +1,10 @@
 // use serde_json::json;
 use tokio_stream::StreamExt;
 use tokio_tungstenite::{connect_async, tungstenite::stream::MaybeTlsStream, WebSocketStream};
+use tokio_tungstenite::tungstenite::protocol::Message;
 use url::Url;
 use std::time::{SystemTime, UNIX_EPOCH};
-// use futures_util::{SinkExt};
+use futures_util::{SinkExt};
 // use std::time::{Duration, Instant};
 // use std::any::type_name;
 
@@ -14,9 +15,6 @@ mod datastructs;
 use datastructs::{special_data_types::*};
 
 const WS_URL: &str = "wss://fstream.binance.com/";
-// ws/btcusdt@depth5@100ms";
-// <symbol>@bookTicker
-
 
 
 async fn orderbook_sub() {
@@ -30,16 +28,25 @@ async fn orderbook_sub() {
         Ok((mut ws_stream,_)) => {
             println!("Websocket connected");
             
+            
             while let Some(Ok(message)) = ws_stream.next().await {
-                let start = SystemTime::now();
-                let since_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
-                
-                println!("Received {:?} {}", since_epoch.as_millis(), message);
-
-                // let _parsed_struct: BinanceOrderbook = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
+                match message {
+                    Message::Ping(ping_data) => {
+                        ws_stream.send(Message::Pong(ping_data)).await.unwrap();
+                    }
+                    _ => {
+                        let start = SystemTime::now();
+                        let since_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
+                        
+                        println!("Received TICKSUB - {}", message);
+        
+                        let _parsed_struct: BinanceOrderbook = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
+                        let diff = since_epoch.as_millis().saturating_sub(_parsed_struct.E as u128);
+                        println!("Ticker received {}: {:?}", diff, _parsed_struct);        
+                    }
                 }
             }
-
+        }
         Err(e) => {
             println!("Connection failed {}", e);
         }
@@ -58,12 +65,22 @@ async fn orderbook_ticker() {
             println!("Websocket connected");
             
             while let Some(Ok(message)) = ws_stream.next().await {
-                let start = SystemTime::now();
-                let since_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
+                match message {
+                    Message::Ping(ping_data) => {
+                        ws_stream.send(Message::Pong(ping_data)).await.unwrap();
+                    }
+                    _ => {
+                        let start = SystemTime::now();
+                        let since_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
+                        
+                        println!("Received TICKSUB - {}", message);
+        
+                        let _parsed_struct: BinanceTicker = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
+                        let diff = since_epoch.as_millis().saturating_sub(_parsed_struct.E as u128);
+                        println!("Ticker received {}: {:?}", diff, _parsed_struct);        
+                    }
+                }
                 
-                println!("Received {:?} {}", since_epoch.as_millis(), message);
-
-                // let _parsed_struct: BinanceOrderbook = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
                 }
             }
 

@@ -12,7 +12,7 @@ pub mod special_data_types {
 
     #[allow(non_snake_case)]
     #[derive(Debug, Serialize, Deserialize, Clone)]
-    pub struct LevelData {
+    pub struct PriceData {
         #[serde(deserialize_with = "str_to_f64")]
         pub price: f64,
         #[serde(deserialize_with = "str_to_f64")]
@@ -21,35 +21,36 @@ pub mod special_data_types {
 
     #[allow(non_snake_case)]
     #[derive(Debug, Serialize, Deserialize)]
-    pub struct PriceData {
-        #[serde(deserialize_with = "str_to_f64")]
-        pub endPrice: f64,
-        #[serde(deserialize_with = "str_to_f64")]
-        pub startPrice: f64,
-        pub levels: Vec<LevelData>,
-    }
-
-    #[allow(non_snake_case)]
-    #[derive(Debug, Serialize, Deserialize)]
-    pub struct BinanceLevelData {
-        pub ask: PriceData,
-        pub bid: PriceData,
-    }
-
-    #[allow(non_snake_case)]
-    #[derive(Debug, Serialize, Deserialize)]
     pub struct BinanceOrderbook {
         pub e: String,
-        pub E: u32,
-        pub T: String,
+        pub E: u64,
+        pub T: u64,
         pub s: String,
-        pub U: u32,
-        pub u: u32,
-        pub pu: u32,
-        pub b: Vec<BinanceLevelData>
+        pub U: u64,
+        pub u: u64,
+        pub pu: u64,
+        pub b: Vec<PriceData>,
+        pub a: Vec<PriceData>,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct BinanceTicker {
+        pub e: String,
+        pub u: u64,
+        pub s: String,
+        #[serde(deserialize_with = "str_to_f64")]
+        pub b: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        pub B: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        pub a: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        pub A: f64,
+        pub T: u64,
+        pub E: u64,
     }
     
-
 }
 
 // Received 1741282187481 {"e":"depthUpdate","E":1741282187461,"T":1741282187461,"s":"BTCUSDT","U":6948375693146,"u":6948375703528,"pu":6948375692666,"b":[["88719.90","2.903"],["88719.40","0.004"],["88719.20","0.045"],["88718.70","0.170"],["88718.60","0.002"]],"a":[["88720.00","0.595"],["88720.10","0.027"],["88720.20","0.002"],["88720.40","0.031"],["88721.00","0.002"]]}
