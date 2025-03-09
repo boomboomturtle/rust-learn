@@ -50,7 +50,22 @@ pub mod special_data_types {
         pub T: u64,
         pub E: u64,
     }
-    
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct CurrentBinanceOrderbook {
+        pub e: String,
+        pub E: u64,
+        pub T: u64,
+        pub s: String,
+        pub U: u64,
+        pub u: u64,
+        pub pu: u64,
+        pub b: Vec<PriceData>,
+        pub a: Vec<PriceData>,
+    }
+
+
 }
 
 // Received 1741282187481 {"e":"depthUpdate","E":1741282187461,"T":1741282187461,"s":"BTCUSDT","U":6948375693146,"u":6948375703528,"pu":6948375692666,"b":[["88719.90","2.903"],["88719.40","0.004"],["88719.20","0.045"],["88718.70","0.170"],["88718.60","0.002"]],"a":[["88720.00","0.595"],["88720.10","0.027"],["88720.20","0.002"],["88720.40","0.031"],["88721.00","0.002"]]}

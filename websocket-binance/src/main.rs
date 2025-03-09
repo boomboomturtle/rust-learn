@@ -14,7 +14,24 @@ use futures_util::{SinkExt};
 mod datastructs;
 use datastructs::{special_data_types::*};
 
+use once_cell::sync::Lazy;
+use std::sync::Mutex;
+
 const WS_URL: &str = "wss://fstream.binance.com/";
+
+static CURR_OB: Lazy<Mutex<BinanceOrderbook>> = Lazy::new(|| Mutex::new( BinanceOrderbook {
+    e: "CurrentOrderbook".to_string(), // Type of event
+    E: 0, // event time
+    s:"BTCUSDT".to_string(), // symbol
+    T: 0,
+    U: 0, // last update id in the event
+    u:0, // first update id in the event
+    pu: 0, // final update id in the stream
+    b: vec![PriceData {price: 0.0, quantity: 0.0}], // bids
+    a: vec![PriceData {price: 0.0, quantity: 0.0}], // asks
+}
+));
+
 
 
 async fn orderbook_sub() {
@@ -38,11 +55,24 @@ async fn orderbook_sub() {
                         let start = SystemTime::now();
                         let since_epoch = start.duration_since(UNIX_EPOCH).expect("Time went backwards");
                         
-                        println!("Received TICKSUB - {}", message);
+                        println!("Received OBSUB - {}", message);
         
                         let _parsed_struct: BinanceOrderbook = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
-                        let diff = since_epoch.as_millis().saturating_sub(_parsed_struct.E as u128);
-                        println!("Ticker received {}: {:?}", diff, _parsed_struct);        
+                        let _diff = since_epoch.as_millis().saturating_sub(_parsed_struct.E as u128);
+                        // println!("Ticker received {}: {:?}", diff, _parsed_struct);    
+
+                        let mut data_value = CURR_OB.lock().unwrap();
+                        data_value.T = _parsed_struct.T;
+                        data_value.E = _parsed_struct.E;
+                        data_value.U = _parsed_struct.U;
+                        data_value.a = _parsed_struct.a;
+                        data_value.b = _parsed_struct.b;
+                        data_value.e = _parsed_struct.e;
+                        data_value.pu = _parsed_struct.pu;
+                        data_value.s = _parsed_struct.s;
+                        data_value.u = _parsed_struct.u;
+    
+                        println!("Updating our Current orderbook: {:?}", data_value);
                     }
                 }
             }
@@ -76,8 +106,40 @@ async fn orderbook_ticker() {
                         println!("Received TICKSUB - {}", message);
         
                         let _parsed_struct: BinanceTicker = serde_json::from_str(&message.to_string()).expect("Failed to parse JSON");
-                        let diff = since_epoch.as_millis().saturating_sub(_parsed_struct.E as u128);
-                        println!("Ticker received {}: {:?}", diff, _parsed_struct);        
+                        let _diff = since_epoch.as_millis().saturating_sub(_parsed_struct.E as u128);
+                        // println!("Ticker received {}: {:?}", diff, _parsed_struct);        
+                        let mut data_value = CURR_OB.lock().unwrap();
+
+                        data_value.T = _parsed_struct.T;
+                        data_value.E = _parsed_struct.E;
+                        data_value.u = _parsed_struct.u;
+                        data_value.e = _parsed_struct.e;
+
+                        let first_bid: PriceData = data_value.b[0].clone();
+                        let first_ask: PriceData = data_value.a[0].clone();
+
+                        for x in 0..data_value.b.len()  {
+                            match x {
+                                0 => {
+                                    data_value.b[x].price = _parsed_struct.b;
+                                    data_value.b[x].quantity = _parsed_struct.B;
+                                }
+                                _ => {
+                                    data_value.b[x].price = _parsed_struct.b - (first_bid.price - data_value.b[x].price);
+                                }
+                            }
+                            match x {
+                                0 => {
+                                    data_value.a[x].price = _parsed_struct.a;
+                                    data_value.a[x].quantity = _parsed_struct.A;
+                                }
+                                _ => {
+                                    data_value.a[x].price = _parsed_struct.a + (data_value.a[x].price - first_ask.price);
+                                }
+                            }
+                        }
+
+                        println!("Updating our Current orderbook: {:?}", data_value);
                     }
                 }
                 
