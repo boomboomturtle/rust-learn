@@ -159,7 +159,5 @@ async fn main() {
     let task_ob = tokio::spawn(orderbook_sub());
     let task_ticker = tokio::spawn(orderbook_ticker());
 
-    let _ =tokio::join!(task_ob);
+    let _ =tokio::join!(task_ob, task_ticker);
 }
-
-// PARSING THE OB IS INCOMPLETE

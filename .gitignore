@@ -3,9 +3,16 @@ set_env.sh
 /trial
 test.py
 hibachi-python/
+
 /websocket-connect/target
 /websocket-connect/output.log
+
 questions.txt
 logstudy.py
+
 /websocket-binance/target
 /websocket-binance/output.log
+
+/compare-websockets/target
+/compare-websockets/output.log
+/compare-websockets/output-sample.log
