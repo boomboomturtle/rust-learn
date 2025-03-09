@@ -124,10 +124,14 @@ pub mod special_data_types {
         pub a: Vec<LevelData>,
     }
 
-    // pub struct OrderbookStats {
-    //     pub spread: f64,
-    //     pub spread_bps: f64,
-    // }
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct OrderbookStats {
+        pub spread: f64,
+        pub spread_bps: f64,
+        pub tob_volume_bid: f64,
+        pub tob_volume_ask: f64,
+    }
 
 }
 

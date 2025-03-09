@@ -2,6 +2,7 @@ use serde_json::json;
 // use tokio::net::{TcpListener, TcpStream};
 use tokio_stream::StreamExt;
 use tokio_tungstenite::{connect_async, tungstenite::{stream::MaybeTlsStream, protocol::Message}, WebSocketStream};
+use tokio::time::{sleep};
 use url::Url;
 use futures_util::{SinkExt};
 use std::time::{Duration, Instant};
@@ -324,10 +325,28 @@ async fn binance_orderbook_ticker() {
 }
 
 async fn ob_evaluation() {
-    let mut curr_binance_ob = CURR_BINANCE_OB.lock().unwrap();
-    let mut curr_hibachi_ob = CURR_HIBACHI_OB.lock().unwrap();
+    loop {
+        sleep(Duration::from_millis(100)).await;
 
+        let curr_binance_ob = CURR_BINANCE_OB.lock().unwrap();
+        let curr_hibachi_ob = CURR_HIBACHI_OB.lock().unwrap();
     
+        let mut binance_stats: OrderbookStats = OrderbookStats {spread: 0.0, spread_bps: 0.0, tob_volume_ask: 0.0, tob_volume_bid: 0.0};
+        let mut hibachi_stats: OrderbookStats = OrderbookStats {spread: 0.0, spread_bps: 0.0, tob_volume_ask: 0.0, tob_volume_bid: 0.0};
+    
+        binance_stats.spread = curr_binance_ob.a[0].price - curr_binance_ob.b[0].price;
+        binance_stats.spread_bps = f64::from(2*1000)*binance_stats.spread/(curr_binance_ob.a[0].price + curr_binance_ob.b[0].price);
+        binance_stats.tob_volume_ask = curr_binance_ob.a[0].quantity;
+        binance_stats.tob_volume_bid = curr_binance_ob.b[0].quantity;
+        
+        hibachi_stats.spread = curr_hibachi_ob.ask.levels[0].price - curr_hibachi_ob.bid.levels[0].price;
+        hibachi_stats.spread_bps = f64::from(2*1000)*hibachi_stats.spread/(curr_hibachi_ob.ask.levels[0].price + curr_hibachi_ob.bid.levels[0].price);
+        hibachi_stats.tob_volume_ask = curr_hibachi_ob.ask.levels[0].quantity;
+        hibachi_stats.tob_volume_bid = curr_hibachi_ob.bid.levels[0].quantity;
+
+        println!("EVALUATION \n\n HIBACHI = {:?}\n BINANCE = {:?}\n\n", hibachi_stats, binance_stats);
+        
+    }
 }
 
 #[tokio::main]
@@ -340,7 +359,7 @@ async fn main() {
         "parameters": {
             "subscriptions": [
                 {
-                    "symbol": "ETH/USDT-P",
+                    "symbol": "BTC/USDT-P",
                     "topic": "orderbook"
                 },
             ]
@@ -354,7 +373,7 @@ async fn main() {
         "parameters": {
             "subscriptions": [
                 {
-                    "symbol": "ETH/USDT-P",
+                    "symbol": "BTC/USDT-P",
                     "topic": "funding_rate_estimation"
                 },
             ]
@@ -371,6 +390,6 @@ async fn main() {
 
     let task_ob_evaluation = tokio::spawn(ob_evaluation());
 
-    let _ =tokio::join!(task_hibachi_ob, task_hibachi_fr, task_binance_ob, task_binance_ticker);
+    let _ =tokio::join!(task_hibachi_ob, task_hibachi_fr, task_binance_ob, task_binance_ticker, task_ob_evaluation);
 }
 
