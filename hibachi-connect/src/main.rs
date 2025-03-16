@@ -18,11 +18,11 @@ use sha2::{Digest, Sha256};
 mod api_struct;
 use api_struct::{get_orderbook_data_api_body::*, market_inventory_api_response::*,open_interest_api_response::*, orderbook_data_api_response::*, price_info_api_response::GetMarketPriceInfo, market_stats_api_response::*};
 use api_struct::{market_trades_api_response::*, market_klines_api_response::*, account_balance_api_response::*, account_history_api_response::*, order_details::*, account_info_api_response::*};
-use api_struct::{account_trades_api_response::*, settled_trades_api_response::*, pending_orders_api_response::*};
+use api_struct::{account_trades_api_response::*, settled_trades_api_response::*, pending_orders_api_response::*, exchange_info_api_response::*};
 
 const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
 const ACCOUNT_API_ENDPOINT: &str = "https://api.hibachi.xyz/";
-const SYMBOL: &str = "ETH/USDT-P";
+const SYMBOL: &str = "BTC/USDT-P";
 const CONTRACT_ID: u32 = 2;
 
 static HIBACHI_API_KEY: Lazy<String> = Lazy::new(|| {
@@ -50,50 +50,60 @@ enum OrderType {
 }
 
 fn main() {
-    let _response = get_market_inventory();
-    let _response = get_order_book(1, 0.01);
-    let _response = get_open_interest();
-    let _response = get_market_price_info();
-    let _response = get_market_stats();
-    let _response = get_market_trades();
-    let _response = get_market_klines("1h".to_owned(), None, None);
-    let _response = get_account_balance();
-    let _response = get_account_history();
-    let _response = get_account_info();
-    let _response = get_account_trades();
-    let _response = get_setttled_trades();
-    let _response = get_pending_orders();
-    let _response = place_order(100000.0, 0.0,OrderSide::ASK, OrderType::LIMIT);
+    let _response = get_exchange_info();
+    // let _response = get_market_inventory();
+    // let _response = get_order_book(1, 0.1);
+    // let _response = get_open_interest();
+    // let _response = get_market_price_info();
+    // let _response = get_market_stats();
+    // let _response = get_market_trades();
+    // let _response = get_market_klines("1h".to_owned(), None, None);
+    // let _response = get_account_balance();
+    // let _response = get_account_history();
+    // let _response = get_account_info();
+    // let _response = get_account_trades();
+    // let _response = get_setttled_trades();
+    // let _response = get_pending_orders();
+    let _response = place_order(100004.0, 0.00001,OrderSide::ASK, OrderType::LIMIT);
 }
 
-fn sign_message(message: String, private_key: String) -> Result<String, Box<dyn std::error::Error>> {
-    // Remove "0x" prefix if present
-    let message = message.to_owned().trim_start_matches("0x");
-    let private_key = private_key.to_owned().trim_start_matches("0x");
+// ('BTC/USDT-P', 'ASK', 'LIMIT', "0.00001", "100004.0", "0.045", 2, 10)
+// const orderBody {
+//     accountId: 4488,
+//     symbol: 'BTC/USDT-P',
+//     side: 'ASK',
+//     orderType: 'LIMIT',
+//     quantity: '0.00001',
+//     maxFeesPercent: '0.045',
+//     price: '100004.0',
+//     nonce: 1741793885924,
+//     signature: ''
+//   }
 
-    // Decode the private key from hex
-    let secret_key_bytes = hex::decode(private_key)?;
-    let secret_key_array: [u8; 32] = secret_key_bytes
-        .as_slice()
-        .try_into()
-        .map_err(|_| "Invalid private key length")?;
-    let secret_key = SecretKey::from_bytes(&secret_key_array)?;
-    
-    // Create a signing key
-    let signing_key = SigningKey::from(secret_key);
+use bigdecimal::{BigDecimal, ToPrimitive};
+use std::str::FromStr;
 
-    // Hash the message using SHA-256
-    let mut hasher = Sha256::new();
-    hasher.update(hex::decode(message)?);
-    let message_hash = hasher.finalize();
+const PRICE_MULTIPLIER: u64 = (1u64 << 32); // Adjust as needed
 
-    // Sign the hashed message
-    let signature: Signature = signing_key.sign(&message_hash);
+fn price_from_real(price: f64, underlying_decimals: i32) -> BigDecimal {
+    let decimals = 6 - underlying_decimals;
 
-    // Convert the signature to a hex string
-    Ok(hex::encode(signature.to_bytes()))
+    // Convert price (f64) to BigDecimal using string parsing to maintain precision
+    let mut price_big = BigDecimal::from_str(&price.to_string()).unwrap();
+
+    // Apply decimal shift
+    price_big = if decimals >= 0 {
+        price_big * BigDecimal::from(10_i64.pow(decimals as u32))
+    } else {
+        price_big / BigDecimal::from(10_i64.pow((-decimals) as u32))
+    };
+
+    // Apply multiplier
+    price_big *= BigDecimal::from(PRICE_MULTIPLIER);
+
+    // Round down to integer (truncate decimals)
+    price_big.with_scale(0)
 }
-
 
 fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) -> Result<(), Error> {
 
@@ -129,11 +139,16 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
     // "maxFeesPercent": "0.00045"
 
     let now = Utc::now();
-    let nonce: i64 = 1714701600000000; // now.timestamp_micros();
+    let nonce: i64 = 1741879308376; // now.timestamp_micros();
 
     let order_side = match side {
         OrderSide::ASK => "ASK".to_string(),
         OrderSide::BID => "BID".to_string(),
+    };
+
+    let order_side_int = match side {
+        OrderSide::ASK => 0,
+        OrderSide::BID => 1,
     };
 
     let order_type = match o_type {
@@ -141,21 +156,21 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
         OrderType::MARKET => "MARKET".to_string(),
     };
 
-    let price_f128 = (price * (1u64 << 32) as f64*10f64.powi(-4)) as u128;
+    let underlying_decimals = 10;
+    let price_i128 = price_from_real(price, underlying_decimals).to_i128().expect("Handling the error case");
+    // let price_f128 = (price * (1u64 << 32) as f64*10f64.powi(-4)) as u128;
 
-    println!("price_u128={}", price_f128);
+    println!("price_i128={:?}", price_i128);
 
-    let max_fees_percent = 0;
+    let max_fees_percent = 0.045;
 
-    let signature= format!("{:016x}{:08x}{:016x}{:016x}", nonce, CONTRACT_ID, price_f128, max_fees_percent);
-     
-    let signed_message = match sign_message(signature, HIBACHI_PRIVATE_KEY.to_string()) {
-        Ok(signed_value) => println!("Signature: 0x{}", signed_value),
-        Err(e) => eprintln!("Error: {}", e),
-    }
+    let mut signature= format!("{:016x} {:08x} {:016x} {:08x} {:016x} {:016x}", nonce, CONTRACT_ID, ((quantity*10_000_000_000.0) as u128), order_side_int, price_i128, ((max_fees_percent*100_000_000.0) as u128));
+    signature = format!("{:016x}{:08x}{:016x}{:08x}{:016x}{:016x}", nonce, CONTRACT_ID, ((quantity*10_000_000_000.0) as u128), order_side_int, price_i128, ((max_fees_percent*100_000_000.0) as u128));
+
+    let signed_message: String = "".to_string();
 
     println!("account_id = {}, symbol = {}, nonce = {}, order_type = {}, side = {}, quantity = {}, price = {}, signature = {:?}, maxFeesPercent = {}, contract_id = {}", 
-            *HIBACHI_ACCOUNT_ID, SYMBOL, nonce, order_type, order_side, quantity.to_string(), price.to_string(), signed_message, max_fees_percent, CONTRACT_ID);
+            *HIBACHI_ACCOUNT_ID, SYMBOL, nonce, order_type, order_side, quantity.to_string(), price.to_string(), signature, max_fees_percent, CONTRACT_ID);
 
     println!("Signed Message = {:?}", signed_message);
 
@@ -469,7 +484,7 @@ fn get_order_book(ob_depth: u32, ob_granularity: f64)  -> Result <(), Error> {
 
     //{"ask":{"endPrice":"2807.88","levels":[{"price":"2807.88","quantity":"4.541690338"}],"startPrice":"2807.88"},"bid":{"endPrice":"2806.76","levels":[{"price":"2806.76","quantity":"1.410000000"}],"startPrice":"2806.76"}}
 
-    // println!("{}", response);
+    println!("{}", response);
     let _parsed_struct: GetOrderbookData = serde_json::from_str(&response).expect("Failed to parse JSON");
 
     // let elapsed: Duration = start_time.elapsed();    
@@ -493,6 +508,7 @@ fn get_market_inventory() -> Result <(), Error> {
     let response: String = get(url)?
         .text()?;    
 
+    // println!("{:?}", response);
     // let elapsed: Duration = start_time.elapsed();    
     // println!("Time taken for GET request: {:?}", elapsed);
 
@@ -504,6 +520,34 @@ fn get_market_inventory() -> Result <(), Error> {
     // println!("Time taken to deserialize and parse: {:?}", elapsed);
 
     // println!("{:?}", _parsed_struct);
+
+    Ok(())
+}
+
+fn get_exchange_info() -> Result <(), Error> {
+    let mut url: String = DATA_API_ENDPOINT.to_owned();
+    let url_appendage: &str = "market/exchange-info";
+    url.push_str(url_appendage);
+
+    println!("{}", url);
+
+    // let start_time: Instant = Instant::now();
+    // Send a GET request
+    let response: String = get(url)?
+        .text()?;    
+
+    println!("{:?}", response);
+    // let elapsed: Duration = start_time.elapsed();    
+    // println!("Time taken for GET request: {:?}", elapsed);
+
+    // let start_time: Instant = Instant::now();
+
+    let _parsed_struct: ExchangeInfo = serde_json::from_str(&response).expect("Failed to parse JSON");
+
+    // let elapsed: Duration = start_time.elapsed();    
+    // println!("Time taken to deserialize and parse: {:?}", elapsed);
+
+    println!("{:?}", _parsed_struct);
 
     Ok(())
 }

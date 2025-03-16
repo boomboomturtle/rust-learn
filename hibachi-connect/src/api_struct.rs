@@ -1,3 +1,15 @@
+use serde::{Deserialize, Deserializer};
+use std::str::FromStr;
+
+fn str_to_f64<'de, D>(deserializer: D) -> Result<f64, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let s: &str = Deserialize::deserialize(deserializer)?;
+    f64::from_str(s).map_err(serde::de::Error::custom)
+}
+
+
 pub mod market_inventory_api_response {
     use serde::{Deserialize, Serialize};
 
@@ -144,8 +156,8 @@ pub mod market_inventory_api_response {
     struct InfoData {
         category: Option<String>,
         markPrice: String,
-        price24hAgo: String,
-        priceLatest: String,
+        price24hAgo: Option<String>,
+        priceLatest: Option<String>,
         tags: Vec<String>,
     }
 
@@ -633,5 +645,85 @@ pub mod pending_orders_api_response {
     // pub struct GetPendingOrders {
     //     pub orders: Vec<PendingOrders>,
     // }
+}
+
+pub mod exchange_info_api_response {
+    use serde::{Deserialize, Serialize};
+    use crate::api_struct::str_to_f64;
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct ExchangeInfo {
+        pub feeConfig: FeeConfig,
+        pub futureContracts: Vec<FutureContracts>,
+        pub instantWithdrawalLimit: InstantWithdrawalLimit,
+        pub maintenanceWindow: Vec<MaintenanceWindow>,
+        pub status: String,
+    }
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct FeeConfig {
+        #[serde(deserialize_with = "str_to_f64")]
+        pub depositFees: f64,
+        pub instantWithdrawDstPublicKey: String,
+        pub instantWithdrawalFees: Vec<(i32, f64)>,
+        #[serde(deserialize_with = "str_to_f64")]
+        pub tradeMakerFeeRate: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        tradeTakerFeeRate: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        transferFeeRate: f64,
+        #[serde(deserialize_with = "str_to_f64")]
+        withdrawalFees: f64,
+        }
+
+        #[allow(non_snake_case)]
+        #[derive(Debug, Serialize, Deserialize)]
+        pub struct FutureContracts {
+            pub displayName: String,
+            pub id: u32,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub maintenanceFactorForPositions: f64,
+            pub marketCloseTimestamp: Option<String>,
+            pub marketOpenTimestamp: Option<String>,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub minNotional: f64,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub minOrderSize: f64,
+            pub orderbookGranularities: Vec<String>,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub riskFactorForOrders: f64,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub riskFactorForPositions: f64,
+            pub settlementDecimals: u32,
+            pub settlementSymbol: String,
+            pub status: String,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub stepSize: f64,
+            pub symbol: String,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub tickSize: f64,
+            pub underlyingDecimals: u32,
+            pub underlyingSymbol: String,      
+        }
+        
+        #[allow(non_snake_case)]
+        #[derive(Debug, Serialize, Deserialize)]
+        pub struct InstantWithdrawalLimit {
+            #[serde(deserialize_with = "str_to_f64")]
+            pub lowerLimit: f64,
+            #[serde(deserialize_with = "str_to_f64")]
+            pub upperLimit: f64,
+        }
+
+        #[allow(non_snake_case)]
+        #[derive(Debug, Serialize, Deserialize)]
+        pub struct MaintenanceWindow {
+            pub begin: f64,
+            pub end: f64,
+            pub note: String,
+        }
+
 }
 

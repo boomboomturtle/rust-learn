@@ -16,3 +16,8 @@ logstudy.py
 /compare-websockets/target
 /compare-websockets/output.log
 /compare-websockets/output-sample.log
+
+/hibachi-example-js/
+/node_modules/
+/package-lock.json
+/package.json
