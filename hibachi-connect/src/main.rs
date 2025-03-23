@@ -12,20 +12,19 @@ use std::time::{Duration, Instant};
 use serde_json::json;
 
 // use ethers::signers::{LocalWallet, Signer};
-use ethers::utils::keccak256;
 use hex;
 use std::time::{SystemTime, UNIX_EPOCH};
 use tokio;
 use tokio::runtime::Runtime;
 use sha2::{Sha256, Digest};
-use secp256k1::{Message, Secp256k1, ecdsa::Signature};
+use secp256k1::{Message, Secp256k1};
 use ethers::signers::{LocalWallet, Signer};
 use ethers::types::U256;
 
 mod api_struct;
 use api_struct::{get_orderbook_data_api_body::*, market_inventory_api_response::*,open_interest_api_response::*, orderbook_data_api_response::*, price_info_api_response::GetMarketPriceInfo, market_stats_api_response::*};
 use api_struct::{market_trades_api_response::*, market_klines_api_response::*, account_balance_api_response::*, account_history_api_response::*, order_details::*, account_info_api_response::*};
-use api_struct::{account_trades_api_response::*, settled_trades_api_response::*, pending_orders_api_response::*, exchange_info_api_response::*};
+use api_struct::{account_trades_api_response::*, settled_trades_api_response::*, pending_orders_api_response::*, exchange_info_api_response::*, place_order_api_response::*};
 
 const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
 const ACCOUNT_API_ENDPOINT: &str = "https://api.hibachi.xyz/";
@@ -63,35 +62,21 @@ enum OrderType {
 
 
 fn main() {
-    // let _response = set_exchange_data();
-    // let _response = get_market_inventory();
-    // let _response = get_order_book(1, 0.1);
-    // let _response = get_open_interest();
-    // let _response = get_market_price_info();
-    // let _response = get_market_stats();
-    // let _response = get_market_trades();
-    // let _response = get_market_klines("1h".to_owned(), None, None);
-    // let _response = get_account_balance();``
-    // let _response = get_account_history();
-    // let _response = get_account_info();
-    // let _response = get_account_trades();
-    // let _response = get_setttled_trades();
-    // let _response = get_pending_orders();
+    let _response = get_market_inventory();
+    let _response = get_order_book(1, 0.1);
+    let _response = get_open_interest();
+    let _response = get_market_price_info();
+    let _response = get_market_stats();
+    let _response = get_market_trades();
+    let _response = get_market_klines("1h".to_owned(), None, None);
+    let _response = get_account_balance();
+    let _response = get_account_history();
+    let _response = get_account_info();
+    let _response = get_account_trades();
+    let _response = get_setttled_trades();
+    let _response = get_pending_orders();
     let _response = place_order(100004.0, 0.00001, OrderSide::ASK, OrderType::LIMIT);
 }
-
-// ('BTC/USDT-P', 'ASK', 'LIMIT', "0.00001", "100004.0", "0.045", 2, 10)
-// const orderBody {
-//     accountId: 4488,
-//     symbol: 'BTC/USDT-P',
-//     side: 'ASK',
-//     orderType: 'LIMIT',
-//     quantity: '0.00001',
-//     maxFeesPercent: '0.045',
-//     price: '100004.0',
-//     nonce: 1741793885924,
-//     signature: ''
-//   }
 
 use bigdecimal::{BigDecimal, ToPrimitive};
 use std::str::FromStr;
@@ -193,9 +178,12 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
         .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned())
         .json(&order_bundle)
         .send()?;
-
+    
     println!("Response status: {}", response.status());
-    println!("Response body: {}", response.text()?);
+    // println!("Response body: {}", response.text()?);
+
+    let _parsed_struct: OrderResponse = serde_json::from_str(&response.text().expect("Error in fetching the text()")).expect("Error in parsing place_order");
+    println!("OrderResponse: {:?}", _parsed_struct);
 
     Ok(())
 }

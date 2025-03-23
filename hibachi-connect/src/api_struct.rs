@@ -727,3 +727,13 @@ pub mod exchange_info_api_response {
 
 }
 
+pub mod place_order_api_response {
+    use serde::{Deserialize, Serialize};    
+
+    #[allow(non_snake_case)]
+    #[derive(Debug, Serialize, Deserialize)]
+    pub struct OrderResponse {
+        pub orderId: String,
+    }
+
+}
