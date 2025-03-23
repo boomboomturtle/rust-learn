@@ -671,12 +671,12 @@ pub mod exchange_info_api_response {
         #[serde(deserialize_with = "str_to_f64")]
         pub tradeMakerFeeRate: f64,
         #[serde(deserialize_with = "str_to_f64")]
-        tradeTakerFeeRate: f64,
+        pub tradeTakerFeeRate: f64,
         #[serde(deserialize_with = "str_to_f64")]
-        transferFeeRate: f64,
+        pub transferFeeRate: f64,
         #[serde(deserialize_with = "str_to_f64")]
-        withdrawalFees: f64,
-        }
+        pub withdrawalFees: f64,
+    }
 
         #[allow(non_snake_case)]
         #[derive(Debug, Serialize, Deserialize)]
@@ -704,7 +704,7 @@ pub mod exchange_info_api_response {
             pub symbol: String,
             #[serde(deserialize_with = "str_to_f64")]
             pub tickSize: f64,
-            pub underlyingDecimals: u32,
+            pub underlyingDecimals: i32,
             pub underlyingSymbol: String,      
         }
         

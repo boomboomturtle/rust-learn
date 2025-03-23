@@ -4,16 +4,23 @@ use once_cell::sync::Lazy;
 use reqwest::blocking::{get, Client};
 use reqwest::header::AUTHORIZATION;
 use reqwest::Error;
+use lazy_static::lazy_static;
+use std::sync::Mutex;
 
 use chrono::Utc;
 use std::time::{Duration, Instant};
-// use serde_json::Value;
+use serde_json::json;
 
-use k256::ecdsa::{SigningKey, Signature, signature::Signer};
-use k256::SecretKey;
-use sha2::{Digest, Sha256};
-
-
+// use ethers::signers::{LocalWallet, Signer};
+use ethers::utils::keccak256;
+use hex;
+use std::time::{SystemTime, UNIX_EPOCH};
+use tokio;
+use tokio::runtime::Runtime;
+use sha2::{Sha256, Digest};
+use secp256k1::{Message, Secp256k1, ecdsa::Signature};
+use ethers::signers::{LocalWallet, Signer};
+use ethers::types::U256;
 
 mod api_struct;
 use api_struct::{get_orderbook_data_api_body::*, market_inventory_api_response::*,open_interest_api_response::*, orderbook_data_api_response::*, price_info_api_response::GetMarketPriceInfo, market_stats_api_response::*};
@@ -24,6 +31,11 @@ const DATA_API_ENDPOINT: &str = "https://data-api.hibachi.xyz/";
 const ACCOUNT_API_ENDPOINT: &str = "https://api.hibachi.xyz/";
 const SYMBOL: &str = "BTC/USDT-P";
 const CONTRACT_ID: u32 = 2;
+
+
+lazy_static! {
+    static ref EXCHANGE_INFO: Mutex<FutureContracts> = Mutex::new(set_exchange_data());
+}
 
 static HIBACHI_API_KEY: Lazy<String> = Lazy::new(|| {
     env::var("HIBACHI_API_KEY").expect("HIBACHI_API_KEY not set")
@@ -49,8 +61,9 @@ enum OrderType {
     MARKET,
 }
 
+
 fn main() {
-    let _response = get_exchange_info();
+    // let _response = set_exchange_data();
     // let _response = get_market_inventory();
     // let _response = get_order_book(1, 0.1);
     // let _response = get_open_interest();
@@ -58,13 +71,13 @@ fn main() {
     // let _response = get_market_stats();
     // let _response = get_market_trades();
     // let _response = get_market_klines("1h".to_owned(), None, None);
-    // let _response = get_account_balance();
+    // let _response = get_account_balance();``
     // let _response = get_account_history();
     // let _response = get_account_info();
     // let _response = get_account_trades();
     // let _response = get_setttled_trades();
     // let _response = get_pending_orders();
-    let _response = place_order(100004.0, 0.00001,OrderSide::ASK, OrderType::LIMIT);
+    let _response = place_order(100004.0, 0.00001, OrderSide::ASK, OrderType::LIMIT);
 }
 
 // ('BTC/USDT-P', 'ASK', 'LIMIT', "0.00001", "100004.0", "0.045", 2, 10)
@@ -83,7 +96,7 @@ fn main() {
 use bigdecimal::{BigDecimal, ToPrimitive};
 use std::str::FromStr;
 
-const PRICE_MULTIPLIER: u64 = (1u64 << 32); // Adjust as needed
+const PRICE_MULTIPLIER: u64 = 1u64 << 32; // Adjust as needed
 
 fn price_from_real(price: f64, underlying_decimals: i32) -> BigDecimal {
     let decimals = 6 - underlying_decimals;
@@ -106,40 +119,8 @@ fn price_from_real(price: f64, underlying_decimals: i32) -> BigDecimal {
 }
 
 fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) -> Result<(), Error> {
-
-    // Signing Part
-    // nonce: 8 bytes
-    // contractId: 4 bytes
-    // quantity: 8 bytes
-    // side: 4 bytes
-    // price: 8 bytes
-    // maxFeesPercent, should be at least the returned value of /market/exchange-info endpoint. Otherwise, it will be rejected : 8 bytes
-    // creationDeadline (Optional): 
-    // triggerPrice (Optional)
-
-    // Order details:
-    // accountId :should be one of: LIMIT, MARKET
-    // symbol: should be one of the symbol from one of the futureContracts returned by /market/exchange-info API
-    // nonce: should be a unix timestamp either ms or us unique to this order
-    // side: should be one of: ASK, BID
-    // orderType
-    // quantity
-    // price
-    // siganture
-    // maxFeesPercent
-
-    // "accountId": 128,
-    // "symbol": "ETH/USDT-P",
-    // "nonce": 1714701600000000,
-    // "orderType": "LIMIT",
-    // "side": "BID",
-    // "quantity": "1.2",
-    // "price": "3500.1",
-    // "signature": "0000000000000000000000000000000000000000000000000000000000000000",
-    // "maxFeesPercent": "0.00045"
-
     let now = Utc::now();
-    let nonce: i64 = 1741879308376; // now.timestamp_micros();
+    let nonce: i64 = 1742714851498; // now.timestamp_micros();
 
     let order_side = match side {
         OrderSide::ASK => "ASK".to_string(),
@@ -156,10 +137,8 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
         OrderType::MARKET => "MARKET".to_string(),
     };
 
-    let underlying_decimals = 10;
-    let price_i128 = price_from_real(price, underlying_decimals).to_i128().expect("Handling the error case");
-    // let price_f128 = (price * (1u64 << 32) as f64*10f64.powi(-4)) as u128;
-
+    let local_exch_info = EXCHANGE_INFO.lock().expect("Cannot access EXCHANGE_INFO");
+    let price_i128 = price_from_real(price, local_exch_info.underlyingDecimals).to_i128().expect("Handling the error case");
     println!("price_i128={:?}", price_i128);
 
     let max_fees_percent = 0.045;
@@ -167,16 +146,51 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
     let mut signature= format!("{:016x} {:08x} {:016x} {:08x} {:016x} {:016x}", nonce, CONTRACT_ID, ((quantity*10_000_000_000.0) as u128), order_side_int, price_i128, ((max_fees_percent*100_000_000.0) as u128));
     signature = format!("{:016x}{:08x}{:016x}{:08x}{:016x}{:016x}", nonce, CONTRACT_ID, ((quantity*10_000_000_000.0) as u128), order_side_int, price_i128, ((max_fees_percent*100_000_000.0) as u128));
 
-    let signed_message: String = "".to_string();
+    let privatekey = HIBACHI_PRIVATE_KEY.to_owned();
+    
+    // Convert hex string to bytes
+    let bytes = hex::decode(signature).expect("Invalid hex string");
+    
+    // Compute SHA-256 hash
+    let mut hasher = Sha256::new();
+    hasher.update(&bytes);
+    let hash_result = hasher.finalize();
+    
+    // Convert hash to hex format
+    let hash_hex = hex::encode(hash_result);
 
-    println!("account_id = {}, symbol = {}, nonce = {}, order_type = {}, side = {}, quantity = {}, price = {}, signature = {:?}, maxFeesPercent = {}, contract_id = {}", 
-            *HIBACHI_ACCOUNT_ID, SYMBOL, nonce, order_type, order_side, quantity.to_string(), price.to_string(), signature, max_fees_percent, CONTRACT_ID);
+    println!("SHA256: msgHash: {:?}", hash_hex);
 
-    println!("Signed Message = {:?}", signed_message);
+    // Convert private key string to bytes
+    let private_key_bytes = hex::decode(&privatekey).expect("Failed to decode private key");
+    let rt = Runtime::new().unwrap();
+    let signed_message = rt.block_on(sign_message(&hash_hex, &private_key_bytes)).expect("Hello");
 
-    // 0xe8100c48581d7944152ba7666b4128c9fc491d30d4bd702f717477d9a6a54ae3
-    // NxnTqs8U3KHwD6D6d5Lxw3XEEQiLT0z9lT_ghmC8TpQ=
-    // 0x02822208f111ea2a00e06a607681123caf740ba4b65df21bcd19920727a8715d43956dc3aca1caf9ec7b3b2bc29318222bbfebbed5c608b6176617b3e849adc3
+    println!("Signed Message: {:?}", signed_message);
+    
+    let mut url = ACCOUNT_API_ENDPOINT.to_owned();
+    let url_appendage = "/trade/order";
+    url.push_str(url_appendage);
+
+    let order_bundle = json!({
+        "accountId": HIBACHI_ACCOUNT_ID.to_owned(),
+        "symbol": SYMBOL.to_owned(),
+        "nonce": nonce,
+        "orderType": order_type,
+        "side": order_side,
+        "quantity": quantity.to_string(),
+        "price": price.to_string(),
+        "signature": signed_message,
+    });
+
+    let client = Client::new();
+    let response = client.post(url)
+        .header("Authorization", HIBACHI_API_KEY.to_owned())
+        .header("Content-Type", "application/json")
+        .json(&order_bundle)
+        .send()?;
+
+    println!("Response status: {}", response.status());
 
     Ok(())
 }
@@ -524,7 +538,7 @@ fn get_market_inventory() -> Result <(), Error> {
     Ok(())
 }
 
-fn get_exchange_info() -> Result <(), Error> {
+fn set_exchange_data() -> FutureContracts {
     let mut url: String = DATA_API_ENDPOINT.to_owned();
     let url_appendage: &str = "market/exchange-info";
     url.push_str(url_appendage);
@@ -533,10 +547,10 @@ fn get_exchange_info() -> Result <(), Error> {
 
     // let start_time: Instant = Instant::now();
     // Send a GET request
-    let response: String = get(url)?
-        .text()?;    
+    let response: String = get(url).expect("Got an invalid response")
+                            .text().expect("Failed to convert it to text");
 
-    println!("{:?}", response);
+    // println!("{:?}", response);
     // let elapsed: Duration = start_time.elapsed();    
     // println!("Time taken for GET request: {:?}", elapsed);
 
@@ -544,19 +558,44 @@ fn get_exchange_info() -> Result <(), Error> {
 
     let _parsed_struct: ExchangeInfo = serde_json::from_str(&response).expect("Failed to parse JSON");
 
-    // let elapsed: Duration = start_time.elapsed();    
+    // let elapsed: Duration = start_time.elapsed();
     // println!("Time taken to deserialize and parse: {:?}", elapsed);
 
-    println!("{:?}", _parsed_struct);
+    // println!("{:?}", _parsed_struct);
 
-    Ok(())
+    for futures in _parsed_struct.futureContracts {
+        if futures.symbol == SYMBOL {
+            return futures;
+        }
+    }
+
+    panic!("I panic here");
 }
 
-// #[cfg(test)]
-// mod tests {
-//     #[test]
-//     fn test_deserialize() {
-//         let msg = "{"ask":{"endPrice":"2806.35","levels":[{"price":"2806.35","quantity":"0.350000000"}],"startPrice":"2806.35"},"bid":{"endPrice":"2805.30","levels":[{"price":"2805.30","quantity":"0.290000000"}],"startPrice":"2805.30"}}%";
-
-//     }
-// }
+async fn sign_message(msg_hash: &str, private_key: &[u8]) -> Result<String, Box<dyn std::error::Error>> {
+    // Convert hex string to bytes
+    let msg_bytes = hex::decode(msg_hash)?;
+    
+    // Create message for signing
+    let message = Message::from_slice(&msg_bytes)?;
+    
+    // Create secret key from bytes
+    let secret_key = secp256k1::SecretKey::from_slice(private_key)?;
+    
+    // Sign the message
+    let signature = Secp256k1::new().sign_ecdsa(&message, &secret_key);
+    
+    // Format the signature as hex string
+    let sig_bytes = signature.serialize_compact();
+    
+    // Create a wallet from the private key
+    let wallet = LocalWallet::from_bytes(private_key)?;
+    
+    // Sign the message with the wallet to get the correct v value
+    let sig = wallet.sign_message(msg_bytes).await?;
+    
+    Ok(format!("{:x}{:x}{:02x}", 
+        U256::from_big_endian(&sig_bytes[..32]),
+        U256::from_big_endian(&sig_bytes[32..]),
+        sig.v-27))
+}

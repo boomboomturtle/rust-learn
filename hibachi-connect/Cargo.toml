@@ -13,3 +13,7 @@ k256 = { version = "0.13", features = ["ecdsa"] }
 sha2 = "0.10"    # For SHA-256 hashing
 hex = "0.4"      # For encoding hash to hex
 bigdecimal = "0.4.7"
+lazy_static = "1.5.0"
+ethers = "2.0.14"
+tokio = { version = "1.44.1", features = ["full"] }
+secp256k1 = "0.28"
