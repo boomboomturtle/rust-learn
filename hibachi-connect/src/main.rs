@@ -2,7 +2,7 @@ use std::env;
 use once_cell::sync::Lazy;
 // use std::fmt::format;
 use reqwest::blocking::{get, Client};
-use reqwest::header::AUTHORIZATION;
+use reqwest::header::{AUTHORIZATION, CONTENT_TYPE};
 use reqwest::Error;
 use lazy_static::lazy_static;
 use std::sync::Mutex;
@@ -120,7 +120,7 @@ fn price_from_real(price: f64, underlying_decimals: i32) -> BigDecimal {
 
 fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) -> Result<(), Error> {
     let now = Utc::now();
-    let nonce: i64 = 1742714851498; // now.timestamp_micros();
+    let nonce: i64 = now.timestamp_millis(); // Use current timestamp in milliseconds
 
     let order_side = match side {
         OrderSide::ASK => "ASK".to_string(),
@@ -169,28 +169,33 @@ fn place_order(price: f64, quantity: f64, side: OrderSide, o_type: OrderType) ->
     println!("Signed Message: {:?}", signed_message);
     
     let mut url = ACCOUNT_API_ENDPOINT.to_owned();
-    let url_appendage = "/trade/order";
+    let url_appendage = "trade/order";
     url.push_str(url_appendage);
 
     let order_bundle = json!({
-        "accountId": HIBACHI_ACCOUNT_ID.to_owned(),
+        "accountId": HIBACHI_ACCOUNT_ID.to_owned().parse::<i32>().unwrap(),
         "symbol": SYMBOL.to_owned(),
-        "nonce": nonce,
-        "orderType": order_type,
         "side": order_side,
-        "quantity": quantity.to_string(),
-        "price": price.to_string(),
+        "orderType": order_type,
+        "quantity": format!("{:.5}", quantity),
+        "maxFeesPercent": format!("{:.3}", max_fees_percent),
+        "price": format!("{:.1}", price),
+        "nonce": nonce,
         "signature": signed_message,
     });
 
+    println!("order_bundle: {}", serde_json::to_string_pretty(&order_bundle).unwrap());
+    println!("Authorization: {}", HIBACHI_API_KEY.to_owned());
+    
     let client = Client::new();
     let response = client.post(url)
-        .header("Authorization", HIBACHI_API_KEY.to_owned())
-        .header("Content-Type", "application/json")
+        .header(CONTENT_TYPE, "application/json")
+        .header(AUTHORIZATION, HIBACHI_API_KEY.to_owned())
         .json(&order_bundle)
         .send()?;
 
     println!("Response status: {}", response.status());
+    println!("Response body: {}", response.text()?);
 
     Ok(())
 }
